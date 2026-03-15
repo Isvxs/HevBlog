@@ -2,11 +2,131 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>DevLog | 你的開發部落格</title>
+    <title>DevLog | 開發者日誌</title>
     <style>
-        /* ... 延續上一版的 CSS ... */
-        .post-card { background: white; padding: 25px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .loading { text-align: center; padding: 20px; color: #888; }
+        :root {
+            --primary-color: #24292e;
+            --accent-color: #2ea44f;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #1c1e21;
+            --text-muted: #65676b;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            color: var(--primary-color);
+        }
+
+        /* 搜尋區塊樣式 - 延續 Admin 的卡片風格 */
+        .search-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 40px;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .search-grid { grid-template-columns: 1fr; }
+        }
+
+        input, select {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* 文章卡片樣式 */
+        .post-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            border-top: 6px solid var(--accent-color);
+            transition: transform 0.2s;
+        }
+
+        .post-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .category-tag {
+            display: inline-block;
+            background: #eefcf1;
+            color: var(--accent-color);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .post-title {
+            margin: 0 0 10px 0;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .post-meta {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .post-content {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        /* 程式碼區塊美化 (針對 Quill 的 code-block) */
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        #status-msg {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 50px;
+        }
     </style>
 </head>
 <body>
