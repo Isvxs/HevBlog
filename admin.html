@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevLog 管理後台 | 開發者工具</title>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #24292e;
+            --accent-color: #2ea44f;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .admin-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        h2 { color: var(--primary-color); margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #444; }
+
+        input[type="text"], input[type="password"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(46, 164, 79, 0.1);
+        }
+
+        /* 編輯器高度 */
+        #editor-container {
+            height: 450px;
+            background: white;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .ql-toolbar { border-radius: 6px 6px 0 0; }
+
+        .btn-group {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        #push-btn { background-color: var(--accent-color); color: white; }
+        #push-btn:hover { background-color: #2c974b; }
+        #push-btn:disabled { background-color: #94d3a2; cursor: not-allowed; }
+
+        .status-info {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success { background: #dcffe4; color: #155724; display: block; }
+        .error { background: #f8d7da; color: #721c24; display: block; }
+
+        #custom-category-group { display: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <h2>🚀 DevLog 文章發布系統</h2>
+
+    <div class="form-group">
+        <label>GitHub Personal Access Token</label>
+        <input type="password" id="gh-token" placeholder="貼上具有 repo 權限的 Token">
+    </div>
+
+    <div class="form-group">
+        <label>文章標題</label>
+        <input type="text" id="post-title" placeholder="請輸入標題...">
+    </div>
+
+    <div class="form-group">
+        <label>文章分類</label>
+        <select id="category-select">
+            <option value="遊戲開發">遊戲開發</option>
+            <option value="Discord伺服器開發">Discord伺服器開發</option>
+            <option value="others">自訂 / 其他</option>
+        </select>
+        <div id="custom-category-group">
+            <input type="text" id="custom-category" placeholder="請輸入自訂分類名稱">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>文章內容 (Dev Tools 齊全版)</label>
+        <div id="editor-container"></div>
+    </div>
+
+    <div id="status-display" class="status-info"></div>
+
+    <div class="btn-group">
+        <button id="push-btn">發布並 Push 到 GitHub</button>
+    </div>
+</div>
+
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+<script>
+    // --- 配置你的資訊 ---
+    const GITHUB_USER = '你的帳號'; // 改成你的 GitHub 帳號
+    const GITHUB_REPO = '儲存庫名稱'; // 改成你的儲存庫名稱
+    // -------------------
+
+    // 初始化 Quill 編輯器
+    const quill = new Quill('#editor-container', {
+        theme: 'snow',
+        placeholder: '開始撰寫你的開發心得...',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'color': [] }, { 'background': [] }],
+                ['link', 'image'],
+                ['clean']
+            ]
+        }
+    });
+
+    // 處理分類切換邏輯
+    const categorySelect = document.getElementById('category-select');
+    const customGroup = document.getElementById('custom-category-group');
+    
+    categorySelect.addEventListener('change', (e) => {
+        customGroup.style.display = e.target.value === 'others' ? 'block' : 'none';
+    });
+
+    // 發布文章邏輯
+    const pushBtn = document.getElementById('push-btn');
+    const statusDisplay = document.getElementById('status-display');
+
+    pushBtn.addEventListener('click', async () => {
+        const token = document.getElementById('gh-token').value.trim();
+        const title = document.getElementById('post-title').value.trim();
+        const content = quill.root.innerHTML;
+        
+        // 確定最終分類
+        let category = categorySelect.value;
+        if (category === 'others') {
+            category = document.getElementById('custom-category').value.trim() || '未分類';
+        }
+
+        // 基本驗證
+        if (!token) return showStatus("請輸入 GitHub Token", "error");
+        if (!title) return showStatus("請輸入標題", "error");
+        if (quill.getText().trim() === "") return showStatus("內容不能為空", "error");
+
+        pushBtn.disabled = true;
+        pushBtn.innerText = "正在上傳至 GitHub...";
+        showStatus("正在通訊中...", "");
+
+        const postData = {
+            title: title,
+            category: category,
+            date: new Date().toISOString(),
+            content: content
+        };
+
+        const fileName = `post_${Date.now()}.json`;
+        const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/posts/${fileName}`;
+
+        try {
+            // 使用 UTF-8 轉 Base64 以支援中文
+            const base64Content = btoa(unescape(encodeURIComponent(JSON.stringify(postData))));
+
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Upload blog: ${title}`,
+                    content: base64Content
+                })
+            });
+
+            if (response.ok) {
+                showStatus("✅ 發布成功！文章已存入 GitHub 儲存庫。", "success");
+                // 清空欄位
+                document.getElementById('post-title').value = '';
+                quill.setContents([]);
+            } else {
+                const err = await response.json();
+                showStatus(`❌ 失敗：${err.message}`, "error");
+            }
+        } catch (error) {
+            showStatus(`❌ 網路錯誤：${error.message}`, "error");
+        } finally {
+            pushBtn.disabled = false;
+            pushBtn.innerText = "發布並 Push 到 GitHub";
+        }
+    });
+
+    function showStatus(msg, type) {
+        statusDisplay.innerText = msg;
+        statusDisplay.className = "status-info " + type;
+    }
+</script>
+
+</body>
+</html>
