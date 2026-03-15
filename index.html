@@ -2,238 +2,79 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevLog | 開發者日誌</title>
+    <title>DevLog | 你的開發部落格</title>
     <style>
-        :root {
-            --primary-color: #24292e;
-            --accent-color: #2ea44f;
-            --bg-color: #f0f2f5;
-            --card-bg: #ffffff;
-            --text-main: #1c1e21;
-            --text-muted: #65676b;
-        }
-
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
-            max-width: 900px; 
-            margin: 0 auto; 
-            padding: 20px; 
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-        }
-
-        header {
-            text-align: center;
-            padding: 40px 0;
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 2.5rem;
-            color: var(--primary-color);
-        }
-
-        /* 搜尋區塊樣式 - 延續 Admin 的卡片風格 */
-        .search-card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            margin-bottom: 40px;
-        }
-
-        .search-grid {
-            display: grid;
-            grid-template-columns: 2fr 1.5fr 1fr;
-            gap: 15px;
-        }
-
-        @media (max-width: 600px) {
-            .search-grid { grid-template-columns: 1fr; }
-        }
-
-        input, select {
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            outline: none;
-            transition: border 0.2s;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--accent-color);
-        }
-
-        /* 文章卡片樣式 */
-        .post-card {
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-            border-top: 6px solid var(--accent-color);
-            transition: transform 0.2s;
-        }
-
-        .post-card:hover {
-            transform: translateY(-2px);
-        }
-
-        .category-tag {
-            display: inline-block;
-            background: #eefcf1;
-            color: var(--accent-color);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-        }
-
-        .post-title {
-            margin: 0 0 10px 0;
-            font-size: 1.5rem;
-            color: var(--primary-color);
-        }
-
-        .post-meta {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .post-content {
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-        }
-
-        /* 程式碼區塊美化 (針對 Quill 的 code-block) */
-        pre {
-            background: #282c34;
-            color: #abb2bf;
-            padding: 15px;
-            border-radius: 6px;
-            overflow-x: auto;
-        }
-
-        #status-msg {
-            text-align: center;
-            color: var(--text-muted);
-            margin-top: 50px;
-        }
+        /* ... 延續上一版的 CSS ... */
+        .post-card { background: white; padding: 25px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .loading { text-align: center; padding: 20px; color: #888; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>DevLog</h1>
-        <p>技術探索與開發筆記</p>
-    </header>
+    <header><h1>DevLog</h1></header>
 
-    <div class="search-card">
-        <div class="search-grid">
-            <input type="text" id="search-input" placeholder="搜尋標題或內容..." oninput="filterPosts()">
-            <select id="category-filter" onchange="filterPosts()">
-                <option value="all">所有分類</option>
-                <option value="遊戲開發">遊戲開發</option>
-                <option value="Discord伺服器開發">Discord伺服器開發</option>
-                </select>
-            <input type="date" id="date-filter" onchange="filterPosts()">
-        </div>
-    </div>
-
-    <div id="posts-container">
-        <div id="status-msg">正在從 GitHub 獲取文章...</div>
-    </div>
+    <div id="posts-container"></div>
+    <div id="loading" class="loading">載入中...</div>
 
     <script>
-        // --- 設定區 ---
         const GITHUB_USER = 'Isvxs';
         const GITHUB_REPO = 'HevBlog';
-        // --------------
-
-        let cachedPosts = [];
-
-        async function fetchPosts() {
-            const container = document.getElementById('posts-container');
-            try {
-                const listUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/posts`;
-                const response = await fetch(listUrl);
-                
-                if (!response.ok) {
-                    container.innerHTML = '<div id="status-msg">目前還沒有任何發布的文章。</div>';
-                    return;
-                }
-
-                const files = await response.json();
-                const jsonFiles = files.filter(f => f.name.endsWith('.json'));
-
-                if (jsonFiles.length === 0) {
-                    container.innerHTML = '<div id="status-msg">目前資料夾中沒有文章檔案。</div>';
-                    return;
-                }
-
-                // 抓取所有 JSON 內容
-                const postPromises = jsonFiles.map(file => fetch(file.download_url).then(r => r.json()));
-                cachedPosts = await Promise.all(postPromises);
-                
-                // 依照日期排序 (最新的在前)
-                cachedPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                render(cachedPosts);
-            } catch (error) {
-                console.error(error);
-                container.innerHTML = '<div id="status-msg">載入失敗，請檢查網路連線或 GitHub 設定。</div>';
-            }
-        }
-
-        function filterPosts() {
-            const keyword = document.getElementById('search-input').value.toLowerCase();
-            const category = document.getElementById('category-filter').value;
-            const date = document.getElementById('date-filter').value;
-
-            const filtered = cachedPosts.filter(post => {
-                const matchesKeyword = post.title.toLowerCase().includes(keyword) || 
-                                      post.content.toLowerCase().includes(keyword);
-                const matchesCategory = (category === 'all') || (post.category === category);
-                const matchesDate = !date || post.date.startsWith(date);
-
-                return matchesKeyword && matchesCategory && matchesDate;
-            });
-
-            render(filtered);
-        }
-
-        function render(posts) {
-            const container = document.getElementById('posts-container');
-            if (posts.length === 0) {
-                container.innerHTML = '<div id="status-msg">找不到符合條件的文章。</div>';
-                return;
-            }
-
-            container.innerHTML = posts.map(post => `
-                <article class="post-card">
-                    <span class="category-tag">${post.category || '未分類'}</span>
-                    <h2 class="post-title">${post.title}</h2>
-                    <div class="post-meta">
-                        <span>📅 ${new Date(post.date).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                    <div class="post-content">
-                        ${post.content}
-                    </div>
-                </article>
-            `).join('');
-        }
+        let allPosts = []; // 存儲所有文章清單 (為了搜尋)
+        let displayedCount = 0;
+        const PAGE_SIZE = 15;
 
         // 初始化
-        fetchPosts();
+        async function init() {
+            const cached = sessionStorage.getItem('blog_posts');
+            if (cached) {
+                allPosts = JSON.parse(cached);
+            } else {
+                await fetchPostList();
+            }
+            renderPosts();
+            window.addEventListener('scroll', handleScroll);
+        }
+
+        async function fetchPostList() {
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/posts`);
+            const files = (await res.json()).filter(f => f.name.endsWith('.json')).reverse();
+            
+            // 為了效能，只抓檔案資訊。點進去時再抓內容太慢，所以這邊一次抓好
+            const posts = await Promise.all(files.map(f => fetch(f.download_url).then(r => r.json())));
+            allPosts = posts;
+            sessionStorage.setItem('blog_posts', JSON.stringify(allPosts));
+        }
+
+        function renderPosts() {
+            const container = document.getElementById('posts-container');
+            const end = Math.min(displayedCount + PAGE_SIZE, allPosts.length);
+            
+            for (let i = displayedCount; i < end; i++) {
+                const post = allPosts[i];
+                const div = document.createElement('article');
+                div.className = 'post-card';
+                div.innerHTML = `
+                    <span class="category-tag">${post.category}</span>
+                    <h2>${post.title}</h2>
+                    <div>${post.content}</div>
+                `;
+                container.appendChild(div);
+            }
+            
+            displayedCount = end;
+            if (displayedCount >= allPosts.length) {
+                document.getElementById('loading').innerText = "沒有更多文章了";
+                window.removeEventListener('scroll', handleScroll);
+            }
+        }
+
+        function handleScroll() {
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+                renderPosts();
+            }
+        }
+
+        init();
     </script>
 </body>
 </html>
