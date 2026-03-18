@@ -3,101 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevLog | 開發者日誌</title>
+    <title>DevLog | 分頁讀取版</title>
     <style>
-        :root { --primary: #24292e; --accent: #2ea44f; --bg: #f6f8fa; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); max-width: 900px; margin: 0 auto; padding: 20px; line-height: 1.6; }
-        .search-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .post-card { background: white; padding: 30px; margin-bottom: 20px; border-radius: 8px; border-top: 5px solid var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .tag { display: inline-block; background: #eefcf1; color: var(--accent); padding: 2px 10px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
-        #loading { text-align: center; padding: 20px; color: #666; }
+        :root { --accent: #2ea44f; --bg: #f6f8fa; }
+        body { font-family: sans-serif; background: var(--bg); max-width: 800px; margin: 0 auto; padding: 20px; }
+        .post-card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-top: 4px solid var(--accent); }
+        .loading-sentinel { text-align: center; padding: 20px; color: #888; font-size: 0.9em; }
+        .search-bar { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-    <header><h1>DevLog</h1></header>
-
-    <div class="search-card">
-        <input type="text" id="search-box" placeholder="🔍 搜尋標題、內容或分類..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;">
-    </div>
-
+    <h1>DevLog</h1>
+    <input type="text" id="search" class="search-bar" placeholder="搜尋標題或內容...">
+    
     <div id="posts-container"></div>
-    <div id="loading">載入中...</div>
+    <div id="loading-node" class="loading-sentinel">正在準備文章清單...</div>
 
     <script>
         const GITHUB_USER = 'Isvxs';
         const GITHUB_REPO = 'HevBlog';
         
-        let allPosts = [];      // 原始所有資料
-        let filteredPosts = []; // 搜尋後資料
-        let displayedCount = 0;
-        const PAGE_SIZE = 8;
+        let fileList = [];      // 儲存所有文章的檔名資訊 (Lightweight)
+        let loadedPosts = [];   // 已抓取完整內容的文章
+        let currentIndex = 0;   // 目前載入到第幾個檔案
+        const PAGE_SIZE = 15;   // 每次滑到底載入 15 篇
+        let isFetching = false;
 
-        // 初始化
         async function init() {
-            const cached = sessionStorage.getItem('blog_posts');
-            if (cached) {
-                allPosts = JSON.parse(cached);
-                filteredPosts = [...allPosts];
-            } else {
-                await fetchPosts();
+            // 1. 先從 Session 取回已載入的內容 (避免回上一頁重讀)
+            const cachedPosts = sessionStorage.getItem('loaded_content');
+            if (cachedPosts) {
+                loadedPosts = JSON.parse(cachedPosts);
+                renderInitial(loadedPosts);
             }
-            renderPosts();
-            
-            // 搜尋監聽
-            document.getElementById('search-box').addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                filteredPosts = allPosts.filter(p => 
-                    p.title.toLowerCase().includes(term) || 
-                    p.content.toLowerCase().includes(term) || 
-                    p.category.toLowerCase().includes(term)
-                );
-                displayedCount = 0;
-                document.getElementById('posts-container').innerHTML = '';
-                renderPosts();
-            });
 
-            // 滾動監聽
-            window.addEventListener('scroll', () => {
-                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200) {
-                    renderPosts();
-                }
-            });
-        }
-
-        async function fetchPosts() {
+            // 2. 獲取遠端所有檔案清單 (不含內容，體積很小)
             try {
                 const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/posts`);
-                const files = (await res.json()).filter(f => f.name.endsWith('.json')).reverse();
-                allPosts = await Promise.all(files.map(f => fetch(f.download_url).then(r => r.json())));
-                filteredPosts = [...allPosts];
-                sessionStorage.setItem('blog_posts', JSON.stringify(allPosts));
+                const data = await res.json();
+                // 排除非 JSON 檔案並排序 (由新到舊)
+                fileList = data.filter(f => f.name.endsWith('.json')).reverse();
+                
+                // 如果是第一次進來，加載第一頁
+                if (loadedPosts.length === 0) {
+                    loadNextBatch();
+                } else {
+                    currentIndex = loadedPosts.length;
+                    updateLoadingText();
+                }
             } catch (e) {
-                document.getElementById('loading').innerText = "載入失敗，請檢查網路。";
+                document.getElementById('loading-node').innerText = "無法讀取清單。";
+            }
+
+            // 3. 監聽滾動 (使用 Intersection Observer 效能更好)
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && !isFetching) {
+                    loadNextBatch();
+                }
+            }, { threshold: 0.1 });
+            observer.observe(document.getElementById('loading-node'));
+        }
+
+        // 抓取下一組 15 篇文章
+        async function loadNextBatch() {
+            if (currentIndex >= fileList.length || isFetching) return;
+            isFetching = true;
+            document.getElementById('loading-node').innerText = "載入中...";
+
+            const nextBatchFiles = fileList.slice(currentIndex, currentIndex + PAGE_SIZE);
+            
+            try {
+                // 併行抓取這 15 個檔案的實際內容
+                const batchContent = await Promise.all(
+                    nextBatchFiles.map(file => fetch(file.download_url).then(r => r.json()))
+                );
+
+                loadedPosts = [...loadedPosts, ...batchContent];
+                sessionStorage.setItem('loaded_content', JSON.stringify(loadedPosts));
+                
+                renderBatch(batchContent);
+                currentIndex += nextBatchFiles.length;
+            } catch (e) {
+                console.error("Batch fetch error", e);
+            } finally {
+                isFetching = false;
+                updateLoadingText();
             }
         }
 
-        function renderPosts() {
+        function renderBatch(posts) {
             const container = document.getElementById('posts-container');
-            const end = Math.min(displayedCount + PAGE_SIZE, filteredPosts.length);
-            
-            for (let i = displayedCount; i < end; i++) {
-                const p = filteredPosts[i];
-                const div = document.createElement('article');
+            posts.forEach(post => {
+                const div = document.createElement('div');
                 div.className = 'post-card';
                 div.innerHTML = `
-                    <span class="tag">${p.category}</span>
-                    <h2>${p.title}</h2>
-                    <small>${new Date(p.date).toLocaleDateString()}</small>
-                    <div>${p.content}</div>
+                    <small style="color:var(--accent); font-weight:bold;">${post.category || '一般'}</small>
+                    <h2 style="margin:5px 0;">${post.title}</h2>
+                    <div style="font-size:0.9em; color:#666; margin-bottom:15px;">📅 ${new Date(post.date).toLocaleDateString()}</div>
+                    <div class="content">${post.content}</div>
                 `;
                 container.appendChild(div);
-            }
-            
-            displayedCount = end;
-            const loading = document.getElementById('loading');
-            loading.innerText = displayedCount >= filteredPosts.length ? "沒有更多文章了" : "向下滑動載入更多...";
+            });
         }
+
+        function renderInitial(posts) {
+            document.getElementById('posts-container').innerHTML = '';
+            renderBatch(posts);
+        }
+
+        function updateLoadingText() {
+            const node = document.getElementById('loading-node');
+            if (currentIndex >= fileList.length) {
+                node.innerText = "🎉 已讀完所有文章";
+            } else {
+                node.innerText = "向下滾動載入更多...";
+            }
+        }
+
+        // 搜尋功能 (在已載入的內容中搜尋)
+        document.getElementById('search').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.post-card');
+            cards.forEach(card => {
+                const text = card.innerText.toLowerCase();
+                card.style.display = text.includes(term) ? 'block' : 'none';
+            });
+        });
 
         init();
     </script>
