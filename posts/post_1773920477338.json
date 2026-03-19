@@ -1,0 +1,1 @@
+{"title":"Refactor article loading to prevent duplicates","category":"Discord伺服器開發","date":"2026-03-19T11:41:17.338Z","content":"<p>Updated the article loading mechanism to filter out duplicate content and changed the batch size to 9 articles.</p><p><br></p><p><br></p><p>This article was written by AI and led by <em>Developer</em>.</p>"}
