@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統維護中 | HevLog</title>
+    <style>
+        :root {
+            --bg-dark: #0d1117;
+            --card-dark: #161b22;
+            --accent: #63adf7;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .fixing-card {
+            background-color: var(--card-dark);
+            width: 90%;
+            max-width: 500px;
+            padding: 40px;
+            border-radius: 12px;
+            border-top: 5px solid var(--accent);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .icon { font-size: 3rem; margin-bottom: 20px; }
+        
+        h1 {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .announcement {
+            line-height: 1.8;
+            color: var(--text-main);
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: left;
+            margin-top: 20px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="fixing-card">
+        <div class="icon">🛠️</div>
+        <h1>系統維修中</h1>
+        <p style="color: var(--text-muted);">正在進行系統優化，請稍後再試。</p>
+        
+        <div id="announcement-box" class="announcement">
+            正在讀取修補公告...
+        </div>
+
+        <div class="footer">HevLog Creator Dev Team</div>
+    </div>
+
+    <script>
+        // 讀取維護資訊
+        async function loadStatus() {
+            try {
+                const res = await fetch('status.json?t=' + Date.now());
+                const data = await res.json();
+                if (data.isFixing) {
+                    document.getElementById('announcement-box').innerText = data.message || "目前暫無詳細說明。";
+                } else {
+                    // 如果不小心進來但維護已結束，自動跳回首頁
+                    window.location.href = 'index.html';
+                }
+            } catch (e) {
+                document.getElementById('announcement-box').innerText = "修補中，敬請期待。";
+            }
+        }
+        loadStatus();
+    </script>
+</body>
+</html>
