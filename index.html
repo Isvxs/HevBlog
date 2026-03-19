@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevLog | 分頁讀取版</title>
+    <title>HevLog | 開發者日誌</title>
     <style>
         :root { --accent: #2ea44f; --bg: #f6f8fa; }
         body { font-family: sans-serif; background: var(--bg); max-width: 800px; margin: 0 auto; padding: 20px; }
@@ -115,7 +115,7 @@
         function updateLoadingText() {
             const node = document.getElementById('loading-node');
             if (currentIndex >= fileList.length) {
-                node.innerText = "🎉 已讀完所有文章";
+                node.innerText = "已讀完所有文章";
             } else {
                 node.innerText = "向下滾動載入更多...";
             }
