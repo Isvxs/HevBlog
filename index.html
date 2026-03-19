@@ -242,6 +242,16 @@
         searchInput.addEventListener('input', handleSearch);
 
         async function init() {
+            try {
+        const statusRes = await fetch('status.json?t=' + Date.now());
+        if (statusRes.ok) {
+            const statusData = await statusRes.json();
+            if (statusData.isFixing) {
+                window.location.href = 'Fixing.html';
+                return; // 停止執行後續程式碼
+            }
+        }
+    } catch (e) {}
             // 功能優化：即使回上一頁，搜尋內容也會保留在輸入框中，需要清除
             if(sessionStorage.getItem('is_searching')) {
                 searchInput.value = '';
