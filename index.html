@@ -24,39 +24,48 @@
         const GITHUB_USER = 'Isvxs';
         const GITHUB_REPO = 'HevBlog';
         
-        let fileList = [];      // 儲存所有文章的檔名資訊 (Lightweight)
-        let loadedPosts = [];   // 已抓取完整內容的文章
-        let currentIndex = 0;   // 目前載入到第幾個檔案
-        const PAGE_SIZE = 15;   // 每次滑到底載入 15 篇
+        let fileList = [];      
+        let loadedPosts = [];   
+        let currentIndex = 0;   
+        
+        // 1. 修改為每次載入 9 篇
+        const PAGE_SIZE = 9;   
         let isFetching = false;
 
+        // 2. 新增一個 Set 來追蹤已經出現過的「文章內容」，用來過濾重複
+        const seenContents = new Set();
+
         async function init() {
-            // 1. 先從 Session 取回已載入的內容 (避免回上一頁重讀)
             const cachedPosts = sessionStorage.getItem('loaded_content');
             if (cachedPosts) {
                 loadedPosts = JSON.parse(cachedPosts);
+                // 從快取還原時，也要把內容加入 seenContents，避免後續載入時重複
+                loadedPosts.forEach(post => {
+                    const cleanContent = post.content ? post.content.trim() : "";
+                    seenContents.add(cleanContent);
+                });
                 renderInitial(loadedPosts);
             }
 
-            // 2. 獲取遠端所有檔案清單 (不含內容，體積很小)
             try {
                 const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/posts`);
                 const data = await res.json();
-                // 排除非 JSON 檔案並排序 (由新到舊)
                 fileList = data.filter(f => f.name.endsWith('.json')).reverse();
                 
-                // 如果是第一次進來，加載第一頁
                 if (loadedPosts.length === 0) {
                     loadNextBatch();
                 } else {
-                    currentIndex = loadedPosts.length;
+                    // 如果有快取，我們需要推算 currentIndex 應該在哪裡
+                    // 因為有過濾重複機制，實際渲染的文章數 (loadedPosts.length) 會小於或等於已讀取的檔案數
+                    // 為了簡單且避免重複讀取，我們直接從頭比對哪些檔案還沒被讀過，或者直接讓 currentIndex 加上對應的數量
+                    // 但最穩妥的方式是每次滑動都重新檢查剩餘檔案
+                    currentIndex = parseInt(sessionStorage.getItem('current_file_index')) || loadedPosts.length;
                     updateLoadingText();
                 }
             } catch (e) {
                 document.getElementById('loading-node').innerText = "無法讀取清單。";
             }
 
-            // 3. 監聽滾動 (使用 Intersection Observer 效能更好)
             const observer = new IntersectionObserver((entries) => {
                 if (entries[0].isIntersecting && !isFetching) {
                     loadNextBatch();
@@ -65,7 +74,6 @@
             observer.observe(document.getElementById('loading-node'));
         }
 
-        // 抓取下一組 15 篇文章
         async function loadNextBatch() {
             if (currentIndex >= fileList.length || isFetching) return;
             isFetching = true;
@@ -74,16 +82,31 @@
             const nextBatchFiles = fileList.slice(currentIndex, currentIndex + PAGE_SIZE);
             
             try {
-                // 併行抓取這 15 個檔案的實際內容
                 const batchContent = await Promise.all(
                     nextBatchFiles.map(file => fetch(file.download_url).then(r => r.json()))
                 );
 
-                loadedPosts = [...loadedPosts, ...batchContent];
-                sessionStorage.setItem('loaded_content', JSON.stringify(loadedPosts));
+                // 3. 過濾掉內容重複的文章
+                const uniqueBatch = [];
+                batchContent.forEach(post => {
+                    const cleanContent = post.content ? post.content.trim() : "";
+                    // 如果這個內容還沒出現過，才把它加進畫面
+                    if (!seenContents.has(cleanContent)) {
+                        seenContents.add(cleanContent);
+                        uniqueBatch.push(post);
+                    } else {
+                        console.log("已自動過濾重複內容的貼文:", post.title);
+                    }
+                });
+
+                loadedPosts = [...loadedPosts, ...uniqueBatch];
                 
-                renderBatch(batchContent);
+                // 更新快取，並記錄目前讀取到第幾個檔案，確保重新整理後不會重複讀取
+                sessionStorage.setItem('loaded_content', JSON.stringify(loadedPosts));
                 currentIndex += nextBatchFiles.length;
+                sessionStorage.setItem('current_file_index', currentIndex);
+                
+                renderBatch(uniqueBatch);
             } catch (e) {
                 console.error("Batch fetch error", e);
             } finally {
@@ -121,7 +144,6 @@
             }
         }
 
-        // 搜尋功能 (在已載入的內容中搜尋)
         document.getElementById('search').addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             const cards = document.querySelectorAll('.post-card');
