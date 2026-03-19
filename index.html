@@ -5,16 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HevLog | 開發者日誌</title>
     <style>
-        /* --- 1. 美術優化 (Aesthetics Optimization) --- */
-        /* 定義專業、簡潔的色彩與字體變數 */
+        /* --- 美術優化與系統變數 --- */
         :root {
             --primary-bg: #fdfdfd;
             --secondary-bg: #f6f8fa;
             --card-bg: #ffffff;
             --text-main: #1c1e21;
             --text-muted: #57606a;
-            --accent: #007aff; /* 精緻的科技藍 */
-            --accent-light: rgba(0, 122, 255, 0.1);
+            --accent: #63adf7;
+            --accent-light: rgba(99, 173, 247, 0.1);
             --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
             --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             --border-radius: 12px;
@@ -28,11 +27,11 @@
             color: var(--text-main);
             margin: 0;
             padding: 0;
-            padding-top: var(--header-height); /* 為 Sticky Header 預留空間 */
+            padding-top: var(--header-height);
             line-height: 1.6;
         }
 
-        /* 固定頂部欄 (Sticky Header) */
+        /* 固定頂部導覽列 */
         header {
             position: fixed;
             top: 0;
@@ -40,7 +39,7 @@
             width: 100%;
             height: var(--header-height);
             background-color: rgba(253, 253, 253, 0.95);
-            backdrop-filter: blur(10px); /* 現代磨砂玻璃效果 */
+            backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -58,12 +57,8 @@
             letter-spacing: -0.5px;
         }
 
-        /* 搜尋欄功能優化 (Functional Optimization) */
-        .search-container {
-            position: relative;
-            width: 280px;
-        }
-
+        /* 搜尋列 */
+        .search-container { position: relative; width: 280px; }
         .search-container::before {
             content: "🔍";
             position: absolute;
@@ -74,7 +69,6 @@
             color: var(--text-muted);
             opacity: 0.7;
         }
-
         .search-bar {
             width: 100%;
             padding: 10px 12px 10px 38px;
@@ -86,50 +80,32 @@
             outline: none;
             transition: var(--transition);
         }
-
         .search-bar:focus {
             border-color: var(--accent);
             background-color: white;
             box-shadow: 0 0 0 3px var(--accent-light);
         }
 
-        main {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
+        main { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        #posts-container { display: grid; grid-template-columns: 1fr; gap: 25px; }
 
-        #posts-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 25px;
-        }
-
-        /* 文章卡片美術優化 (Artistic Optimization) */
+        /* 文章卡片 */
         .post-card {
             background-color: var(--card-bg);
             padding: 30px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             transition: var(--transition);
-            border-top: 5px solid transparent; /* 預留顏色邊框位置 */
+            border-top: 5px solid transparent;
             position: relative;
             overflow: hidden;
             opacity: 0;
             transform: translateY(20px);
             animation: fadeInUp 0.5s ease forwards;
         }
-
-        @keyframes fadeInUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .post-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-hover);
-            border-top-color: var(--accent);
-        }
-
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+        .post-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); border-top-color: var(--accent); }
+        
         .post-card small.category-tag {
             display: inline-block;
             background-color: var(--accent-light);
@@ -142,67 +118,15 @@
             letter-spacing: 0.5px;
             margin-bottom: 15px;
         }
+        .post-card h2 { margin: 0; font-size: 1.75rem; color: var(--text-main); letter-spacing: -0.5px; margin-bottom: 10px; }
+        .post-card .date-display { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 25px; display: flex; align-items: center; gap: 8px; }
+        .post-card .content img { max-width: 100%; height: auto; border-radius: 8px; margin: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .post-card .content { border-top: 1px solid #eaecef; padding-top: 20px; color: var(--text-main); font-size: 1rem; }
+        .post-card .content pre { background-color: var(--secondary-bg); padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid #eaecef; }
 
-        .post-card h2 {
-            margin: 0;
-            font-size: 1.75rem;
-            color: var(--text-main);
-            letter-spacing: -0.5px;
-            margin-bottom: 10px;
-        }
-
-        .post-card .date-display {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* 系統優化：優化圖片在卡片中的顯示 */
-        .post-card .content img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            margin: 15px 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .post-card .content {
-            border-top: 1px solid #eaecef;
-            padding-top: 20px;
-            color: var(--text-main);
-            font-size: 1rem;
-        }
-
-        /* 用於內容輕量化：程式碼區塊樣式 */
-        .post-card .content pre {
-            background-color: var(--secondary-bg);
-            padding: 15px;
-            border-radius: 8px;
-            overflow-x: auto;
-            border: 1px solid #eaecef;
-        }
-
-        .loading-sentinel {
-            text-align: center;
-            padding: 40px 0;
-            color: var(--text-muted);
-            font-size: 0.9em;
-            margin-top: 20px;
-        }
-
-        /* 功能優化：在找不到貼文時的樣式 */
-        #no-results-msg {
-            text-align: center;
-            padding: 80px 0;
-            color: var(--text-muted);
-            background: var(--secondary-bg);
-            border-radius: var(--border-radius);
-            margin-top: 40px;
-            border: 1px solid #eaecef;
-        }
+        /* 系統提示訊息 */
+        .loading-sentinel { text-align: center; padding: 40px 0; color: var(--text-muted); font-size: 0.9em; margin-top: 20px; }
+        #no-results-msg { text-align: center; padding: 80px 0; color: var(--text-muted); background: var(--secondary-bg); border-radius: var(--border-radius); margin-top: 40px; border: 1px solid #eaecef; }
     </style>
 </head>
 <body>
@@ -220,62 +144,53 @@
     </main>
 
     <script>
-        // --- 設定區 ---
-        const GITHUB_USER = 'Isvxs'; // TODO: 改成你的你的 GitHub 帳號
-        const GITHUB_REPO = 'HevBlog'; // TODO: 改成你的儲存庫名稱
-        // --------------
+        // --- 核心設定區 ---
+        const GITHUB_USER = 'Isvxs'; 
+        const GITHUB_REPO = 'HevBlog';
         
-        // 系統優化：使用 Map 和 Set 提高搜尋和過濾重複內容的效能
         let fileList = [];
         let currentIndex = 0;
         let isFetching = false;
         
-        // 保留原有功能：過濾重複內容，PAGE_SIZE=9
-        const PAGE_SIZE = 9;
-        const seenContents = new Set();
+        const PAGE_SIZE = 9; // 每次載入 9 篇
+        const seenContents = new Set(); // 用於過濾重複內容
         
         const postsContainer = document.getElementById('posts-container');
         const loadingNode = document.getElementById('loading-node');
         const searchInput = document.getElementById('search');
 
-        // 優化搜尋功能：在 DOM 內進行即時本地搜尋
         searchInput.addEventListener('input', handleSearch);
 
         async function init() {
+            // 1. 最高優先級：維護模式檢測 (防快取)
             try {
-        const statusRes = await fetch('status.json?t=' + Date.now());
-        if (statusRes.ok) {
-            const statusData = await statusRes.json();
-            if (statusData.isFixing) {
-                window.location.href = 'Fixing.html';
-                return; // 停止執行後續程式碼
+                const statusRes = await fetch('status.json?t=' + Date.now());
+                if (statusRes.ok) {
+                    const statusData = await statusRes.json();
+                    if (statusData.isFixing) {
+                        window.location.href = 'Fixing.html';
+                        return; // 終止加載，直接跳轉
+                    }
+                }
+            } catch (e) {
+                // 若無 status.json 則正常運行
             }
-        }
-    } catch (e) {}
-            // 功能優化：即使回上一頁，搜尋內容也會保留在輸入框中，需要清除
+
+            // 2. 清除搜尋狀態與還原重複內容過濾器
             if(sessionStorage.getItem('is_searching')) {
                 searchInput.value = '';
                 sessionStorage.removeItem('is_searching');
             }
-
-            // 系統與功能優化：從頭還原重複內容 Set，即使回上一頁也能精準過濾
             recoverSeenContentsFromDOM();
 
+            // 3. 獲取最新文章清單
             try {
-                // 功能優化：马上檢測新的貼文/舊貼文。
-                // 方法：每次網頁開啟或手動重新整理時，強制向 GitHub 請求最新的檔案清單。
-                // 輕量化：在 URL 加入時間戳記避免被 CDN 快取。只請求清單，不請求內容，速度極快。
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/posts?t=${new Date().getTime()}`);
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/posts?t=${Date.now()}`);
                 const data = await res.json();
                 
-                if (!Array.isArray(data)) {
-                    throw new Error("無法取得檔案清單，請檢查 GITHUB_USER 和 GITHUB_REPO 設定");
-                }
+                if (!Array.isArray(data)) throw new Error("無法取得檔案清單");
 
                 fileList = data.filter(f => f.name.endsWith('.json')).reverse();
-                
-                // 系統與功能優化：比對本地已渲染的文章與最新的檔案清單
-                // 如果本地端已經渲染的文章數與清單長度對不上，說明有新檔案或手動清除了快取，從頭開始。
                 recoverCurrentIndexFromDOM();
                 
                 if (currentIndex === 0 || sessionStorage.getItem('must_re_render')) {
@@ -292,7 +207,7 @@
                 loadingNode.innerText = "無法連線至 GitHub。請確認配置或網路連線。";
             }
 
-            // 保留原有功能：使用 Intersection Observer 效能更好的監聽滾動
+            // 4. 設定無限滾動偵測
             const observer = new IntersectionObserver((entries) => {
                 if (entries[0].isIntersecting && !isFetching && searchInput.value === '') {
                     loadNextBatch();
@@ -309,21 +224,18 @@
             const nextBatchFiles = fileList.slice(currentIndex, currentIndex + PAGE_SIZE);
             
             try {
-                // 輕量化優化：使用 localStorage 快取已讀取的文章內容，避免重複抓取
+                // 使用 localStorage 快取加速讀取
                 const batchContent = await Promise.all(
                     nextBatchFiles.map(async file => {
                         const cached = localStorage.getItem(`post_data_${file.sha}`);
-                        if(cached) {
-                            return JSON.parse(cached);
-                        } else {
-                            const data = await fetch(file.download_url).then(r => r.json());
-                            localStorage.setItem(`post_data_${file.sha}`, JSON.stringify(data));
-                            return data;
-                        }
+                        if(cached) return JSON.parse(cached);
+                        const data = await fetch(file.download_url).then(r => r.json());
+                        localStorage.setItem(`post_data_${file.sha}`, JSON.stringify(data));
+                        return data;
                     })
                 );
 
-                // 保留原有功能：過濾掉內容完全重複的文章（即使標題或日期不同）
+                // 過濾完全重複的內容
                 const uniqueBatch = [];
                 batchContent.forEach(post => {
                     const cleanContent = post.content ? post.content.trim() : "";
@@ -335,9 +247,7 @@
                     }
                 });
 
-                // 更新本地端進度
                 currentIndex += nextBatchFiles.length;
-                
                 renderBatch(uniqueBatch);
             } catch (e) {
                 console.error("Batch Fetch Error:", e);
@@ -353,10 +263,8 @@
             posts.forEach((post, index) => {
                 const div = document.createElement('article');
                 div.className = 'post-card';
-                // 美術優化：添加延遲動畫
                 div.style.animationDelay = `${index * 50}ms`;
                 
-                // 美術優化：添加更顯眼的分類標籤和日曆圖示
                 div.innerHTML = `
                     <small class="category-tag">${post.category || '一般'}</small>
                     <h2>${post.title}</h2>
@@ -370,21 +278,11 @@
             });
         }
 
-        // 功能與系統優化：當網頁從快取恢復時，不需要重新抓取已渲染的文章，也不會出現重複內容
         function recoverCurrentIndexFromDOM() {
             const cards = document.querySelectorAll('.post-card h2');
-            if (cards.length > 0) {
-                // 這是比較耗能的比對方式，更穩健的方法是把已渲染的 SHA 列表存在 sessionStorage
-                // 但為了「輕量化」減少快取檔案，我們選擇在 init() 時強制比對數量，並在這裡還原索引
-                // 我們假定在 `init()` 中的數量比對如果沒通過，就不會走到這裡。
-                // 這裡我們直接假定已渲染的 DOM 與快取一致。
-                currentIndex = cards.length;
-            } else {
-                currentIndex = 0;
-            }
+            currentIndex = cards.length > 0 ? cards.length : 0;
         }
 
-        // 系統與效能優化：從頭恢復重複內容 Set
         function recoverSeenContentsFromDOM() {
             seenContents.clear();
             const contents = document.querySelectorAll('.post-card .content');
@@ -402,7 +300,6 @@
             }
         }
 
-        // 功能優化：搜尋本地端所有卡片，優化視覺效果，並處理找不到結果的情況
         function handleSearch(e) {
             const term = e.target.value.toLowerCase().trim();
             const cards = document.querySelectorAll('.post-card');
@@ -418,7 +315,6 @@
                 return;
             }
 
-            // 搜尋開始，禁用無限滾動哨兵和快取功能
             sessionStorage.setItem('is_searching', 'true');
             loadingNode.style.display = 'none';
 
