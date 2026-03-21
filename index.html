@@ -3,201 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HevLog | Enterprise Scale</title>
+    <title>HevLog | Dev Log</title>
     <style>
         :root {
-            --primary-bg: #fdfdfd; --secondary-bg: #f6f8fa; --card-bg: #ffffff;
-            --text-main: #1c1e21; --text-muted: #57606a; --accent: #007aff;
-            --border: #eaecef; --header-height: 70px; --card-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            /* 公式化色彩與字體 */
+            --bg: #ffffff; --card: #ffffff; --text: #1a1a1a; --muted: #666666;
+            --accent: #000000; --border: #e1e1e1; --header-bg: rgba(255,255,255,0.8);
+            --font-main: "SF Mono", "Cascadia Code", "Fira Code", "Courier New", monospace;
         }
 
         [data-theme="dark"] {
-            --primary-bg: #0d1117; --secondary-bg: #010409; --card-bg: #161b22;
-            --text-main: #c9d1d9; --text-muted: #8b949e; --accent: #58a6ff;
-            --border: #30363d; --card-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            --bg: #0a0a0a; --card: #141414; --text: #e0e0e0; --muted: #888888;
+            --accent: #ffffff; --border: #262626; --header-bg: rgba(10,10,10,0.8);
         }
 
+        * { box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            background-color: var(--primary-bg); color: var(--text-main);
-            margin: 0; padding-top: var(--header-height); transition: background 0.2s ease;
-            text-rendering: optimizeLegibility;
+            margin: 0; background-color: var(--bg); color: var(--text);
+            font-family: var(--font-main); line-height: 1.5;
+            transition: background 0.2s ease;
         }
 
-        /* 系統輕量化：使用 Layout Containment 優化渲染 */
-        .post-card {
-            contain: content; will-change: transform;
-            background: var(--card-bg); padding: 25px; border-radius: 12px;
-            box-shadow: var(--card-shadow); margin-bottom: 25px;
-            border: 1px solid var(--border); transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1);
-        }
-        .post-card:hover { transform: translateY(-4px); border-color: var(--accent); }
-
+        /* 頂部導航 - 輕量化毛玻璃 */
         header {
-            position: fixed; top: 0; width: 100%; height: var(--header-height);
-            background: var(--card-bg); border-bottom: 1px solid var(--border);
+            position: fixed; top: 0; width: 100%; height: 60px;
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 30px; box-sizing: border-box; z-index: 1000; backdrop-filter: blur(8px);
+            padding: 0 30px; border-bottom: 1px solid var(--border);
+            background: var(--header-bg); backdrop-filter: blur(10px); z-index: 1000;
         }
 
-        .controls { display: flex; gap: 15px; align-items: center; }
+        header h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -1px; margin: 0; cursor: pointer; }
+
+        .nav-right { display: flex; align-items: center; gap: 15px; }
+
+        /* 搜尋框優化 - 公式化樣式 */
         .search-bar {
-            background: var(--secondary-bg); border: 1px solid var(--border);
-            color: var(--text-main); padding: 8px 16px; border-radius: 20px; outline: none;
-            width: 200px; transition: width 0.3s;
+            background: var(--bg); border: 1px solid var(--border);
+            color: var(--text); padding: 6px 12px; font-family: var(--font-main);
+            font-size: 0.85rem; width: 220px; outline: none; transition: width 0.3s;
         }
-        .search-bar:focus { width: 300px; border-color: var(--accent); }
-
-        /* 目錄導覽索引 */
-        #toc-container {
-            position: fixed; left: 20px; top: 100px; width: 180px;
-            font-size: 0.85rem; max-height: 80vh; overflow-y: auto;
-        }
-        .toc-link {
-            color: var(--text-muted); text-decoration: none; display: block;
-            padding: 4px 8px; border-left: 2px solid transparent;
-        }
-        .toc-link.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+        .search-bar:focus { border-color: var(--accent); width: 280px; }
 
         #theme-toggle {
-            cursor: pointer; background: var(--secondary-bg); border: 1px solid var(--border);
-            color: var(--text-main); padding: 5px 12px; border-radius: 6px; font-size: 12px;
+            background: none; border: 1px solid var(--border); color: var(--text);
+            padding: 4px 10px; cursor: pointer; font-family: var(--font-main); font-size: 0.75rem;
         }
 
-        main { max-width: 750px; margin: 30px auto; padding: 0 20px; position: relative; }
-        
-        /* 骨架屏與讀取動畫 */
-        .skeleton { height: 200px; background: var(--secondary-bg); border-radius: 12px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 50% { opacity: .5; } }
-        
-        @media (max-width: 1000px) { #toc-container { display: none; } }
+        /* 佈局 */
+        .layout { display: flex; max-width: 1200px; margin: 80px auto 0; padding: 0 20px; gap: 40px; }
+
+        /* 左側目錄 - 固定位置 */
+        aside { width: 220px; position: sticky; top: 80px; height: fit-content; }
+        aside h4 { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); margin-bottom: 15px; }
+        .toc-item { 
+            display: block; font-size: 0.8rem; color: var(--muted); text-decoration: none;
+            padding: 4px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            transition: color 0.2s; border-left: 2px solid transparent; padding-left: 10px;
+        }
+        .toc-item:hover { color: var(--accent); border-left-color: var(--accent); }
+
+        /* 文章區域 */
+        main { flex: 1; max-width: 700px; }
+        .post-card {
+            padding-bottom: 50px; margin-bottom: 50px; border-bottom: 1px solid var(--border);
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .meta { font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; display: flex; gap: 15px; }
+        .category { color: var(--accent); font-weight: bold; }
+        .post-card h2 { font-size: 1.5rem; margin: 0 0 15px 0; letter-spacing: -0.5px; }
+        .content { font-size: 0.95rem; color: var(--text); }
+        .content img { max-width: 100%; border-radius: 2px; filter: grayscale(0.2); transition: 0.3s; }
+        .content img:hover { filter: grayscale(0); }
+
+        /* 狀態提示 */
+        .status-msg { text-align: center; padding: 40px; font-size: 0.8rem; color: var(--muted); }
+
+        @media (max-width: 900px) { aside { display: none; } .layout { justify-content: center; } }
     </style>
 </head>
 <body data-theme="light">
 
-<header>
-    <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--accent);">HevLog</h1>
-    <div class="controls">
-        <input type="search" id="search" class="search-bar" placeholder="檢索紀錄...">
-        <button id="theme-toggle">🌓 模式</button>
+    <header>
+        <h1 onclick="location.reload()">HevLog</h1>
+        <div class="nav-right">
+            <input type="search" id="search" class="search-bar" placeholder="搜尋文章內容...">
+            <button id="theme-toggle">MODE</button>
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside>
+            <h4>Index / 目錄導覽</h4>
+            <div id="toc-list"></div>
+        </aside>
+
+        <main>
+            <div id="posts-container"></div>
+            <div id="loading-node" class="status-msg">INITIALIZING...</div>
+        </main>
     </div>
-</header>
 
-<nav id="toc-container">
-    <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">Content Index</div>
-    <div id="toc-list"></div>
-</nav>
-
-<main>
-    <div id="posts-container"></div>
-    <div id="loading-node" class="skeleton"></div>
-</main>
-
-<script>
-    const GITHUB_CONFIG = { user: 'Isvxs', repo: 'HevBlog', path: 'posts' };
-    let allFiles = [], filteredFiles = [], currentIndex = 0;
-    let isFetching = false;
-    const PAGE_SIZE = 9;
-
-    // --- 1. 效能優化：主題切換與持久化 ---
-    const initTheme = () => {
-        const saved = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        document.body.setAttribute('data-theme', saved);
-    };
-    document.getElementById('theme-toggle').onclick = () => {
-        const next = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-        document.body.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-    };
-
-    // --- 2. 核心：大數據處理 ---
-    async function init() {
-        initTheme();
+    <script>
+        const GITHUB_USER = 'Isvxs';
+        const GITHUB_REPO = 'HevBlog';
         
-        // 維護檢測
-        try {
-            const status = await fetch(`status.json?t=${Date.now()}`).then(r => r.json());
-            if (status.isFixing) return window.location.href = 'Fixing.html';
-        } catch(e) {}
+        let allFiles = [];      // 原始清單 (30k 條)
+        let filteredFiles = []; // 搜尋過濾後的清單
+        let displayedCount = 0; 
+        let isFetching = false;
+        const PAGE_SIZE = 9;
+        
+        const container = document.getElementById('posts-container');
+        const loadingNode = document.getElementById('loading-node');
+        const searchInput = document.getElementById('search');
 
-        // 輕量化獲取：只拿目錄，不拿內容
-        try {
-            const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.user}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?t=${Date.now()}`);
-            allFiles = (await res.json()).filter(f => f.name.endsWith('.json')).reverse();
-            filteredFiles = [...allFiles]; // 初始搜尋列表
-            renderNextBatch();
-        } catch (e) {
-            document.getElementById('loading-node').innerText = "GitHub API 限制或連線錯誤";
+        // --- 1. 深色模式 (手動與系統記住) ---
+        const toggle = document.getElementById('theme-toggle');
+        const saveTheme = (t) => { document.body.setAttribute('data-theme', t); localStorage.setItem('theme', t); };
+        saveTheme(localStorage.getItem('theme') || 'light');
+        toggle.onclick = () => saveTheme(document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+
+        // --- 2. 核心：輕量化初始化 ---
+        async function init() {
+            // 維護模式檢測
+            try {
+                const s = await fetch('status.json?t=' + Date.now()).then(r => r.json());
+                if (s.isFixing) { window.location.href = 'Fixing.html'; return; }
+            } catch(e) {}
+
+            loadingNode.innerText = "FETCHING REPO DATA...";
+            
+            try {
+                // 僅抓取清單，這對 30k 個檔案來說 GitHub API 仍能負擔 (但建議未來改用 Git Trees API)
+                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/posts?t=${Date.now()}`);
+                const data = await res.json();
+                
+                // 過濾出 JSON 並逆序排列
+                allFiles = data.filter(f => f.name.endsWith('.json')).reverse();
+                filteredFiles = [...allFiles]; // 初始顯示全部
+                
+                renderNextBatch();
+            } catch (e) {
+                loadingNode.innerText = "CONNECTION ERROR.";
+            }
+
+            // 無限滾動
+            window.onscroll = () => {
+                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+                    renderNextBatch();
+                }
+            };
         }
 
-        // 滾動監聽
-        window.addEventListener('scroll', () => {
-            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
-                renderNextBatch();
-            }
-        });
-    }
+        // --- 3. 高效渲染與搜尋 ---
+        async function renderNextBatch() {
+            if (isFetching || displayedCount >= filteredFiles.length) return;
+            isFetching = true;
+            loadingNode.innerText = "LOADING BATCH...";
 
-    async function renderNextBatch() {
-        if (isFetching || currentIndex >= filteredFiles.length) return;
-        isFetching = true;
-        
-        const batch = filteredFiles.slice(currentIndex, currentIndex + PAGE_SIZE);
-        const container = document.getElementById('posts-container');
-
-        // 批次並行抓取內容
-        const postHTMLs = await Promise.all(batch.map(async file => {
-            const cacheKey = `p_${file.sha}`;
-            let data = JSON.parse(localStorage.getItem(cacheKey));
+            const batch = filteredFiles.slice(displayedCount, displayedCount + PAGE_SIZE);
             
-            if (!data) {
-                data = await fetch(file.download_url).then(r => r.json());
-                localStorage.setItem(cacheKey, JSON.stringify(data));
+            for (const file of batch) {
+                try {
+                    // 使用 SHA 快取文章內容，避免 30k 規模下的重複流量
+                    const cacheKey = `p_${file.sha}`;
+                    let post = JSON.parse(localStorage.getItem(cacheKey));
+                    
+                    if (!post) {
+                        post = await fetch(file.download_url).then(r => r.json());
+                        localStorage.setItem(cacheKey, JSON.stringify(post));
+                    }
+                    
+                    createPostElement(post);
+                } catch (e) { console.error("Skip post error"); }
             }
-            
-            return `
-                <article class="post-card" id="card-${file.sha}">
-                    <div style="color:var(--accent); font-size:0.75rem; font-weight:700;">${data.category || 'LOG'}</div>
-                    <h2 style="margin:8px 0; font-size:1.5rem;">${data.title}</h2>
-                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:15px;">📅 ${new Date(data.date).toLocaleDateString()}</div>
-                    <div class="content" style="line-height:1.7;">${data.content}</div>
-                </article>
+
+            displayedCount += batch.length;
+            isFetching = false;
+            loadingNode.innerText = displayedCount >= filteredFiles.length ? "END OF LOGS." : "SCROLL FOR MORE.";
+            updateTOC();
+        }
+
+        function createPostElement(post) {
+            const art = document.createElement('article');
+            art.className = 'post-card';
+            art.innerHTML = `
+                <div class="meta">
+                    <span class="category">${post.category || 'GENERAL'}</span>
+                    <span>${new Date(post.date).toLocaleDateString()}</span>
+                </div>
+                <h2>${post.title}</h2>
+                <div class="content">${post.content}</div>
             `;
-        }));
+            container.appendChild(art);
+        }
 
-        container.insertAdjacentHTML('beforeend', postHTMLs.join(''));
-        currentIndex += PAGE_SIZE;
-        isFetching = false;
-        updateTOC();
-    }
-
-    // --- 3. 搜尋優化：防抖與虛擬過濾 ---
-    let searchTimeout;
-    document.getElementById('search').oninput = (e) => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            const term = e.target.value.toLowerCase();
-            currentIndex = 0;
-            document.getElementById('posts-container').innerHTML = '';
+        // --- 4. 搜尋優化 (不卡頓邏輯) ---
+        let searchTimer;
+        searchInput.oninput = (e) => {
+            clearTimeout(searchTimer);
+            const term = e.target.value.toLowerCase().trim();
             
-            // 輕量化搜尋：只過濾檔名索引，不觸發大量 DOM 操作
-            filteredFiles = allFiles.filter(f => f.name.toLowerCase().includes(term));
-            renderNextBatch();
-        }, 250); // 防抖 250ms
-    };
+            // 使用 Debounce 延遲搜尋，避免每輸入一個字就處理 30k 數據
+            searchTimer = setTimeout(() => {
+                container.innerHTML = '';
+                displayedCount = 0;
+                
+                if (term === "") {
+                    filteredFiles = [...allFiles];
+                } else {
+                    // 輕量化搜尋：只過濾檔案名稱 (通常檔名含日期/關鍵字)
+                    // 若要過濾內容，30k 規模需在 Server 端或預索引，此處以檔名搜尋優化效能
+                    filteredFiles = allFiles.filter(f => f.name.toLowerCase().includes(term));
+                }
+                
+                renderNextBatch();
+                if(filteredFiles.length === 0) loadingNode.innerText = "NO POSTS FOUND.";
+            }, 300);
+        };
 
-    // --- 4. 目錄索引自動生成 ---
-    function updateTOC() {
-        const list = document.getElementById('toc-list');
-        const cards = document.querySelectorAll('.post-card h2');
-        list.innerHTML = [...cards].map(h2 => `
-            <a href="javascript:void(0)" class="toc-link" onclick="document.getElementById('${h2.parentElement.id}').scrollIntoView({behavior:'smooth', block:'center'})">
-                • ${h2.innerText.substring(0, 15)}...
-            </a>
-        `).join('');
-    }
+        // --- 5. 目錄導覽 ---
+        function updateTOC() {
+            const toc = document.getElementById('toc-list');
+            const h2s = container.querySelectorAll('h2');
+            toc.innerHTML = '';
+            h2s.forEach((h, i) => {
+                h.id = `h-${i}`;
+                const a = document.createElement('a');
+                a.className = 'toc-item';
+                a.href = `#h-${i}`;
+                a.innerText = h.innerText;
+                a.onclick = (e) => { e.preventDefault(); h.scrollIntoView({ behavior: 'smooth' }); };
+                toc.appendChild(a);
+            });
+        }
 
-    init();
-</script>
+        init();
+    </script>
 </body>
 </html>
