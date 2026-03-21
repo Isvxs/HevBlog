@@ -12,44 +12,35 @@
             --accent: #000000; --border: #e1e1e1; --header-bg: rgba(255,255,255,0.8);
             --font-main: "SF Mono", "Cascadia Code", "Fira Code", "Courier New", monospace;
         }
-
         [data-theme="dark"] {
             --bg: #0a0a0a; --card: #141414; --text: #e0e0e0; --muted: #888888;
             --accent: #ffffff; --border: #262626; --header-bg: rgba(10,10,10,0.8);
         }
-
         * { box-sizing: border-box; scroll-behavior: smooth; }
         body {
             margin: 0; background-color: var(--bg); color: var(--text);
             font-family: var(--font-main); line-height: 1.5;
             transition: background 0.2s ease;
         }
-
         header {
             position: fixed; top: 0; width: 100%; height: 60px;
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 30px; border-bottom: 1px solid var(--border);
             background: var(--header-bg); backdrop-filter: blur(10px); z-index: 1000;
         }
-
         header h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -1px; margin: 0; cursor: pointer; }
-
         .nav-right { display: flex; align-items: center; gap: 15px; }
-
         .search-bar {
             background: var(--bg); border: 1px solid var(--border);
             color: var(--text); padding: 6px 12px; font-family: var(--font-main);
             font-size: 0.85rem; width: 220px; outline: none; transition: width 0.3s;
         }
         .search-bar:focus { border-color: var(--accent); width: 280px; }
-
         #theme-toggle {
             background: none; border: 1px solid var(--border); color: var(--text);
             padding: 4px 10px; cursor: pointer; font-family: var(--font-main); font-size: 0.75rem;
         }
-
         .layout { display: flex; max-width: 1200px; margin: 80px auto 0; padding: 0 20px; gap: 40px; }
-
         aside { width: 220px; position: sticky; top: 80px; height: calc(100vh - 100px); overflow-y: auto; }
         aside h4 { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); margin-bottom: 15px; }
         .toc-item { 
@@ -58,23 +49,16 @@
             transition: color 0.2s; border-left: 2px solid transparent; padding-left: 10px;
         }
         .toc-item:hover { color: var(--accent); border-left-color: var(--accent); }
-
         main { flex: 1; max-width: 700px; }
-        .post-card {
-            padding-bottom: 50px; margin-bottom: 50px; border-bottom: 1px solid var(--border);
-            animation: fadeIn 0.4s ease-out;
-        }
+        .post-card { padding-bottom: 50px; margin-bottom: 50px; border-bottom: 1px solid var(--border); animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
         .meta { font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; display: flex; gap: 15px; }
         .category { color: var(--accent); font-weight: bold; }
         .post-card h2 { font-size: 1.5rem; margin: 0 0 15px 0; letter-spacing: -0.5px; scroll-margin-top: 80px; }
         .content { font-size: 0.95rem; color: var(--text); }
         .content img { max-width: 100%; border-radius: 2px; filter: grayscale(0.2); transition: 0.3s; }
         .content img:hover { filter: grayscale(0); }
-
         .status-msg { text-align: center; padding: 40px; font-size: 0.8rem; color: var(--muted); }
-
         @media (max-width: 900px) { aside { display: none; } .layout { justify-content: center; } }
     </style>
 </head>
@@ -93,7 +77,6 @@
             <h4>Index / 目錄導覽</h4>
             <div id="toc-list"></div>
         </aside>
-
         <main>
             <div id="posts-container"></div>
             <div id="loading-node" class="status-msg">INITIALIZING...</div>
@@ -101,15 +84,15 @@
     </div>
 
     <script>
-        const GITHUB_USER = 'Isvxs';
-        const GITHUB_REPO = 'HevBlog';
-        
-        let allFiles = [];      
-        let filteredFiles = []; 
-        let displayedCount = 0; 
-        let isFetching = false;
-        const PAGE_SIZE = 9;
-        
+        // --- 核心配置 (請確保與你的 Repo 一致) ---
+        const CONFIG = {
+            USER: 'Isvxs',
+            REPO: 'HevBlog',
+            BRANCH: 'main',
+            PAGE_SIZE: 9
+        };
+
+        let db = { all: [], filtered: [], ptr: 0, isBusy: false };
         const container = document.getElementById('posts-container');
         const loadingNode = document.getElementById('loading-node');
         const searchInput = document.getElementById('search');
@@ -121,75 +104,67 @@
         toggle.onclick = () => saveTheme(document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
 
         // --- 2. 初始化 ---
-       async function init() {
-            // 1. 維護模式偵測 (使用 Raw 連結，不佔用 API 次數)
+        async function init() {
+            // A. 維護模式偵測
             try {
                 const sUrl = `https://raw.githubusercontent.com/${CONFIG.USER}/${CONFIG.REPO}/${CONFIG.BRANCH}/status.json?t=${Date.now()}`;
                 const s = await fetch(sUrl).then(r => r.json());
                 if (s && s.isFixing === true) { window.location.replace('Fixing.html'); return; }
-            } catch(e) { console.warn("Status check failed, proceeding..."); }
+            } catch(e) { console.warn("Status check failed."); }
 
-            sentinel.innerText = "CONNECTING TO HEVLOG DATABASE...";
+            loadingNode.innerText = "CONNECTING TO DATABASE...";
 
             try {
-                // 2. 獲取 Git Tree (萬級檔案的核心)
-                // 先嘗試從 API 獲取最新的 Commit SHA
+                // B. 獲取 Git Tree (萬級檔案優化)
                 const refUrl = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/git/ref/heads/${CONFIG.BRANCH}`;
                 const refRes = await fetch(refUrl);
+                if (refRes.status === 403) throw new Error("API_LIMIT");
+                const refData = await refRes.json();
                 
-                if (refRes.status === 403) {
-                    throw new Error("GITHUB_API_LIMIT");
-                }
-                
-                const ref = await refRes.json();
-                const treeUrl = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/git/trees/${ref.object.sha}?recursive=1`;
+                const treeUrl = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/git/trees/${refData.object.sha}?recursive=1`;
                 const treeRes = await fetch(treeUrl);
                 const treeData = await treeRes.json();
 
-                // 3. 過濾資料
+                // C. 過濾並建立數據索引
                 db.all = treeData.tree
                     .filter(item => item.path.startsWith('posts/') && item.path.endsWith('.json'))
                     .map(item => ({
-                        id: item.sha,
+                        sha: item.sha,
                         name: item.path.split('/').pop(),
-                        cdnUrl: `https://cdn.jsdelivr.net/gh/${CONFIG.USER}/${CONFIG.REPO}@${CONFIG.BRANCH}/${item.path}`
+                        // 使用 CDN 加速讀取
+                        download_url: `https://cdn.jsdelivr.net/gh/${CONFIG.USER}/${CONFIG.REPO}@${CONFIG.BRANCH}/${item.path}`
                     }))
                     .reverse();
 
-                // 儲存一份快取到本地，萬一 API 掛了還能讀
                 localStorage.setItem('hevlog_backup_tree', JSON.stringify(db.all));
-
                 db.filtered = [...db.all];
                 renderNextBatch();
 
             } catch (err) {
                 console.error("Init Error:", err);
-                
-                // 4. 容錯機制：如果 API 掛了，嘗試讀取本地快取
                 const backup = localStorage.getItem('hevlog_backup_tree');
                 if (backup) {
                     db.all = JSON.parse(backup);
                     db.filtered = [...db.all];
                     renderNextBatch();
-                    sentinel.innerText = "OFFLINE MODE: LOADED FROM CACHE.";
+                    loadingNode.innerText = "OFFLINE MODE: LOADED FROM CACHE.";
                 } else {
-                    // 根據錯誤類型顯示具體訊息
-                    if (err.message === "GITHUB_API_LIMIT") {
-                        sentinel.innerHTML = "API LIMIT EXCEEDED.<br>Please wait 30-60 mins or try again later.";
-                    } else {
-                        sentinel.innerText = "CONNECTION ERROR. (Check Repo Privacy/Name)";
-                    }
+                    loadingNode.innerText = err.message === "API_LIMIT" ? "API LIMIT EXCEEDED. TRY LATER." : "CONNECTION ERROR.";
                 }
             }
+
+            window.onscroll = () => {
+                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 800) renderNextBatch();
+            };
         }
 
         // --- 3. 渲染邏輯 ---
         async function renderNextBatch() {
-            if (isFetching || displayedCount >= filteredFiles.length) return;
-            isFetching = true;
+            if (db.isBusy || db.ptr >= db.filtered.length) return;
+            db.isBusy = true;
             loadingNode.innerText = "LOADING BATCH...";
 
-            const batch = filteredFiles.slice(displayedCount, displayedCount + PAGE_SIZE);
+            const batch = db.filtered.slice(db.ptr, db.ptr + CONFIG.PAGE_SIZE);
             
             for (const file of batch) {
                 try {
@@ -200,104 +175,70 @@
                         post = await fetch(file.download_url).then(r => r.json());
                         localStorage.setItem(cacheKey, JSON.stringify(post));
                     }
-                    
                     createPostElement(post, file.sha);
-                } catch (e) { console.error("Skip post error"); }
+                } catch (e) { console.error("Skip post"); }
             }
 
-            displayedCount += batch.length;
-            isFetching = false;
-            loadingNode.innerText = displayedCount >= filteredFiles.length ? "END OF LOGS." : "SCROLL FOR MORE.";
+            db.ptr += batch.length;
+            db.isBusy = false;
+            loadingNode.innerText = db.ptr >= db.filtered.length ? "END OF LOGS." : "SCROLL FOR MORE.";
             updateTOC();
         }
 
-function createPostElement(post, sha) {
-    const art = document.createElement('article');
-    art.className = 'post-card';
-    art.id = `post-container-${sha}`; // 給整個外層一個 ID
-    
-    art.innerHTML = `
-        <div class="meta">
-            <span class="category">${post.category || 'GENERAL'}</span>
-            <span>${new Date(post.date).toLocaleDateString()}</span>
-        </div>
-        <h2 style="scroll-margin-top: 80px;">${post.title}</h2>
-        <div class="content">${post.content}</div>
-    `;
-    container.appendChild(art);
-}
-        // --- 4. 深度搜尋 (標題, 內容, 日期, 分類) ---
+        function createPostElement(post, sha) {
+            const art = document.createElement('article');
+            art.className = 'post-card';
+            art.id = `post-${sha}`;
+            art.innerHTML = `
+                <div class="meta">
+                    <span class="category">${post.category || 'GENERAL'}</span>
+                    <span>${new Date(post.date).toLocaleDateString()}</span>
+                </div>
+                <h2>${post.title}</h2>
+                <div class="content">${post.content}</div>
+            `;
+            container.appendChild(art);
+        }
+
+        // --- 4. 深度搜尋 ---
         let searchTimer;
         searchInput.oninput = (e) => {
             clearTimeout(searchTimer);
             const term = e.target.value.toLowerCase().trim();
-            
             searchTimer = setTimeout(() => {
                 container.innerHTML = '';
-                displayedCount = 0;
-                
-                if (term === "") {
-                    filteredFiles = [...allFiles];
-                } else {
-                    // 核心：檢查快取中的詳細內容
-                    filteredFiles = allFiles.filter(file => {
-                        const cacheKey = `p_${file.sha}`;
-                        const cachedData = localStorage.getItem(cacheKey);
-                        
-                        if (cachedData) {
-                            const post = JSON.parse(cachedData);
-                            return (
-                                (post.title && post.title.toLowerCase().includes(term)) ||
-                                (post.content && post.content.toLowerCase().includes(term)) ||
-                                (post.category && post.category.toLowerCase().includes(term)) ||
-                                (post.date && post.date.toLowerCase().includes(term))
-                            );
-                        }
-                        // 沒快取的文章暫時只能比對檔名，或者引導使用者載入更多
-                        return file.name.toLowerCase().includes(term);
-                    });
-                }
-                
+                db.ptr = 0;
+                db.filtered = db.all.filter(file => {
+                    const cached = localStorage.getItem(`p_${file.sha}`);
+                    if (cached) {
+                        const post = JSON.parse(cached);
+                        return (post.title?.toLowerCase().includes(term) || post.content?.toLowerCase().includes(term));
+                    }
+                    return file.name.toLowerCase().includes(term);
+                });
                 renderNextBatch();
-                if(filteredFiles.length === 0) loadingNode.innerText = "NO POSTS MATCH YOUR SEARCH.";
             }, 400);
         };
 
-        // --- 5. 目錄導覽 (修復錯位問題) ---
+        // --- 5. 目錄導覽 (平滑滾動) ---
         function updateTOC() {
-    const toc = document.getElementById('toc-list');
-    const posts = container.querySelectorAll('.post-card');
-    toc.innerHTML = '';
-    
-    posts.forEach((post) => {
-        const title = post.querySelector('h2').innerText;
-        const targetId = post.id;
-        
-        const a = document.createElement('a');
-        a.className = 'toc-item';
-        a.href = "javascript:void(0);"; // 停用預設跳轉
-        a.innerText = title;
-        
-        a.onclick = (e) => {
-            e.preventDefault();
-            const targetElement = document.getElementById(targetId);
-            if (targetElement) {
-                // 精確計算目標元素相對於頁面頂部的距離
-                const offset = 80; 
-                const bodyRect = document.body.getBoundingClientRect().top;
-                const elementRect = targetElement.getBoundingClientRect().top;
-                const elementPosition = elementRect - bodyRect;
-                const offsetPosition = elementPosition - offset;
-
-                window.scrollTo({
-                    top: offsetPosition,
-                    behavior: 'smooth'
-                });
-            }
-        };
-        toc.appendChild(a);
-    });
-}
+            const toc = document.getElementById('toc-list');
+            const posts = container.querySelectorAll('.post-card');
+            toc.innerHTML = '';
+            posts.forEach((post) => {
+                const title = post.querySelector('h2').innerText;
+                const a = document.createElement('a');
+                a.className = 'toc-item';
+                a.href = "javascript:void(0);";
+                a.innerText = title;
+                a.onclick = () => {
+                    const rect = post.getBoundingClientRect();
+                    const offset = window.pageYOffset + rect.top - 80;
+                    window.scrollTo({ top: offset, behavior: 'smooth' });
+                };
+                toc.appendChild(a);
+            });
+        }
 
         init();
     </script>
