@@ -3,350 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HevLog | 開發者日誌</title>
+    <title>HevLog | Enterprise Scale</title>
     <style>
-        /* --- 美術優化與系統變數 --- */
         :root {
-            --primary-bg: #fdfdfd;
-            --secondary-bg: #f6f8fa;
-            --card-bg: #ffffff;
-            --text-main: #1c1e21;
-            --text-muted: #57606a;
-            --accent: #63adf7;
-            --accent-light: rgba(99, 173, 247, 0.1);
-            --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-            --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --border-radius: 12px;
-            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            --header-height: 70px;
+            --primary-bg: #fdfdfd; --secondary-bg: #f6f8fa; --card-bg: #ffffff;
+            --text-main: #1c1e21; --text-muted: #57606a; --accent: #007aff;
+            --border: #eaecef; --header-height: 70px; --card-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+
+        [data-theme="dark"] {
+            --primary-bg: #0d1117; --secondary-bg: #010409; --card-bg: #161b22;
+            --text-main: #c9d1d9; --text-muted: #8b949e; --accent: #58a6ff;
+            --border: #30363d; --card-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
 
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: var(--primary-bg);
-            color: var(--text-main);
-            margin: 0;
-            padding: 0;
-            padding-top: var(--header-height);
-            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg); color: var(--text-main);
+            margin: 0; padding-top: var(--header-height); transition: background 0.2s ease;
+            text-rendering: optimizeLegibility;
         }
 
-        /* 固定頂部導覽列 */
-        header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: var(--header-height);
-            background-color: rgba(253, 253, 253, 0.95);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 40px;
-            box-sizing: border-box;
-            z-index: 1000;
-            border-bottom: 1px solid #eaecef;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            color: var(--accent);
-            letter-spacing: -0.5px;
-        }
-
-        /* 搜尋列 */
-        .search-container { position: relative; width: 280px; }
-        .search-container::before {
-            content: "🔍";
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 0.9em;
-            color: var(--text-muted);
-            opacity: 0.7;
-        }
-        .search-bar {
-            width: 100%;
-            padding: 10px 12px 10px 38px;
-            border: 1px solid #eaecef;
-            border-radius: 20px;
-            background-color: var(--secondary-bg);
-            box-sizing: border-box;
-            font-size: 0.9rem;
-            outline: none;
-            transition: var(--transition);
-        }
-        .search-bar:focus {
-            border-color: var(--accent);
-            background-color: white;
-            box-shadow: 0 0 0 3px var(--accent-light);
-        }
-
-        main { max-width: 800px; margin: 40px auto; padding: 0 20px; }
-        #posts-container { display: grid; grid-template-columns: 1fr; gap: 25px; }
-
-        /* 文章卡片 */
+        /* 系統輕量化：使用 Layout Containment 優化渲染 */
         .post-card {
-            background-color: var(--card-bg);
-            padding: 30px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-            border-top: 5px solid transparent;
-            position: relative;
-            overflow: hidden;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.5s ease forwards;
+            contain: content; will-change: transform;
+            background: var(--card-bg); padding: 25px; border-radius: 12px;
+            box-shadow: var(--card-shadow); margin-bottom: 25px;
+            border: 1px solid var(--border); transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1);
         }
-        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
-        .post-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); border-top-color: var(--accent); }
-        
-        .post-card small.category-tag {
-            display: inline-block;
-            background-color: var(--accent-light);
-            color: var(--accent);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 15px;
-        }
-        .post-card h2 { margin: 0; font-size: 1.75rem; color: var(--text-main); letter-spacing: -0.5px; margin-bottom: 10px; }
-        .post-card .date-display { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 25px; display: flex; align-items: center; gap: 8px; }
-        .post-card .content img { max-width: 100%; height: auto; border-radius: 8px; margin: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .post-card .content { border-top: 1px solid #eaecef; padding-top: 20px; color: var(--text-main); font-size: 1rem; }
-        .post-card .content pre { background-color: var(--secondary-bg); padding: 15px; border-radius: 8px; overflow-x: auto; border: 1px solid #eaecef; }
+        .post-card:hover { transform: translateY(-4px); border-color: var(--accent); }
 
-        /* 系統提示訊息 */
-        .loading-sentinel { text-align: center; padding: 40px 0; color: var(--text-muted); font-size: 0.9em; margin-top: 20px; }
-        #no-results-msg { text-align: center; padding: 80px 0; color: var(--text-muted); background: var(--secondary-bg); border-radius: var(--border-radius); margin-top: 40px; border: 1px solid #eaecef; }
+        header {
+            position: fixed; top: 0; width: 100%; height: var(--header-height);
+            background: var(--card-bg); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 30px; box-sizing: border-box; z-index: 1000; backdrop-filter: blur(8px);
+        }
+
+        .controls { display: flex; gap: 15px; align-items: center; }
+        .search-bar {
+            background: var(--secondary-bg); border: 1px solid var(--border);
+            color: var(--text-main); padding: 8px 16px; border-radius: 20px; outline: none;
+            width: 200px; transition: width 0.3s;
+        }
+        .search-bar:focus { width: 300px; border-color: var(--accent); }
+
+        /* 目錄導覽索引 */
+        #toc-container {
+            position: fixed; left: 20px; top: 100px; width: 180px;
+            font-size: 0.85rem; max-height: 80vh; overflow-y: auto;
+        }
+        .toc-link {
+            color: var(--text-muted); text-decoration: none; display: block;
+            padding: 4px 8px; border-left: 2px solid transparent;
+        }
+        .toc-link.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+
+        #theme-toggle {
+            cursor: pointer; background: var(--secondary-bg); border: 1px solid var(--border);
+            color: var(--text-main); padding: 5px 12px; border-radius: 6px; font-size: 12px;
+        }
+
+        main { max-width: 750px; margin: 30px auto; padding: 0 20px; position: relative; }
+        
+        /* 骨架屏與讀取動畫 */
+        .skeleton { height: 200px; background: var(--secondary-bg); border-radius: 12px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 50% { opacity: .5; } }
+        
+        @media (max-width: 1000px) { #toc-container { display: none; } }
     </style>
 </head>
-<body>
+<body data-theme="light">
 
-    <header>
-        <h1>HevLog</h1>
-        <div class="search-container">
-            <input type="search" id="search" class="search-bar" placeholder="搜尋標題、分類或內容...">
-        </div>
-    </header>
+<header>
+    <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--accent);">HevLog</h1>
+    <div class="controls">
+        <input type="search" id="search" class="search-bar" placeholder="檢索紀錄...">
+        <button id="theme-toggle">🌓 模式</button>
+    </div>
+</header>
 
-    <main>
-        <div id="posts-container"></div>
-        <div id="loading-node" class="loading-sentinel">正在連線至 GitHub...</div>
-    </main>
+<nav id="toc-container">
+    <div style="font-weight: bold; margin-bottom: 10px; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">Content Index</div>
+    <div id="toc-list"></div>
+</nav>
 
-    <script>
-        // --- 核心設定區 ---
-        const GITHUB_USER = 'Isvxs'; 
-        const GITHUB_REPO = 'HevBlog';
+<main>
+    <div id="posts-container"></div>
+    <div id="loading-node" class="skeleton"></div>
+</main>
+
+<script>
+    const GITHUB_CONFIG = { user: 'Isvxs', repo: 'HevBlog', path: 'posts' };
+    let allFiles = [], filteredFiles = [], currentIndex = 0;
+    let isFetching = false;
+    const PAGE_SIZE = 9;
+
+    // --- 1. 效能優化：主題切換與持久化 ---
+    const initTheme = () => {
+        const saved = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.body.setAttribute('data-theme', saved);
+    };
+    document.getElementById('theme-toggle').onclick = () => {
+        const next = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+    };
+
+    // --- 2. 核心：大數據處理 ---
+    async function init() {
+        initTheme();
         
-        let fileList = [];
-        let currentIndex = 0;
-        let isFetching = false;
-        
-        const PAGE_SIZE = 9; // 每次載入 9 篇
-        const seenContents = new Set(); // 用於過濾重複內容
-        
-        const postsContainer = document.getElementById('posts-container');
-        const loadingNode = document.getElementById('loading-node');
-        const searchInput = document.getElementById('search');
+        // 維護檢測
+        try {
+            const status = await fetch(`status.json?t=${Date.now()}`).then(r => r.json());
+            if (status.isFixing) return window.location.href = 'Fixing.html';
+        } catch(e) {}
 
-        searchInput.addEventListener('input', handleSearch);
-
-        async function init() {
-            // 1. 最高優先級：維護模式檢測 (防快取)
-            try {
-                const statusRes = await fetch('status.json?t=' + Date.now());
-                if (statusRes.ok) {
-                    const statusData = await statusRes.json();
-                    if (statusData.isFixing) {
-                        window.location.href = 'Fixing.html';
-                        return; // 終止加載，直接跳轉
-                    }
-                }
-            } catch (e) {
-                // 若無 status.json 則正常運行
-            }
-
-            // 2. 清除搜尋狀態與還原重複內容過濾器
-            if(sessionStorage.getItem('is_searching')) {
-                searchInput.value = '';
-                sessionStorage.removeItem('is_searching');
-            }
-            recoverSeenContentsFromDOM();
-
-            // 3. 獲取最新文章清單
-            try {
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/posts?t=${Date.now()}`);
-                const data = await res.json();
-                
-                if (!Array.isArray(data)) throw new Error("無法取得檔案清單");
-
-                fileList = data.filter(f => f.name.endsWith('.json')).reverse();
-                recoverCurrentIndexFromDOM();
-                
-                if (currentIndex === 0 || sessionStorage.getItem('must_re_render')) {
-                    sessionStorage.removeItem('must_re_render');
-                    postsContainer.innerHTML = '';
-                    seenContents.clear();
-                    currentIndex = 0;
-                    loadNextBatch();
-                } else {
-                    updateLoadingText();
-                }
-            } catch (e) {
-                console.error("Init Error:", e);
-                loadingNode.innerText = "無法連線至 GitHub。請確認配置或網路連線。";
-            }
-
-            // 4. 設定無限滾動偵測
-            const observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting && !isFetching && searchInput.value === '') {
-                    loadNextBatch();
-                }
-            }, { threshold: 0.1 });
-            observer.observe(loadingNode);
+        // 輕量化獲取：只拿目錄，不拿內容
+        try {
+            const res = await fetch(`https://api.github.com/repos/${GITHUB_CONFIG.user}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.path}?t=${Date.now()}`);
+            allFiles = (await res.json()).filter(f => f.name.endsWith('.json')).reverse();
+            filteredFiles = [...allFiles]; // 初始搜尋列表
+            renderNextBatch();
+        } catch (e) {
+            document.getElementById('loading-node').innerText = "GitHub API 限制或連線錯誤";
         }
 
-        async function loadNextBatch() {
-            if (currentIndex >= fileList.length || isFetching) return;
-            isFetching = true;
-            loadingNode.innerText = "正在載入內容...";
+        // 滾動監聽
+        window.addEventListener('scroll', () => {
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+                renderNextBatch();
+            }
+        });
+    }
 
-            const nextBatchFiles = fileList.slice(currentIndex, currentIndex + PAGE_SIZE);
+    async function renderNextBatch() {
+        if (isFetching || currentIndex >= filteredFiles.length) return;
+        isFetching = true;
+        
+        const batch = filteredFiles.slice(currentIndex, currentIndex + PAGE_SIZE);
+        const container = document.getElementById('posts-container');
+
+        // 批次並行抓取內容
+        const postHTMLs = await Promise.all(batch.map(async file => {
+            const cacheKey = `p_${file.sha}`;
+            let data = JSON.parse(localStorage.getItem(cacheKey));
             
-            try {
-                // 使用 localStorage 快取加速讀取
-                const batchContent = await Promise.all(
-                    nextBatchFiles.map(async file => {
-                        const cached = localStorage.getItem(`post_data_${file.sha}`);
-                        if(cached) return JSON.parse(cached);
-                        const data = await fetch(file.download_url).then(r => r.json());
-                        localStorage.setItem(`post_data_${file.sha}`, JSON.stringify(data));
-                        return data;
-                    })
-                );
-
-                // 過濾完全重複的內容
-                const uniqueBatch = [];
-                batchContent.forEach(post => {
-                    const cleanContent = post.content ? post.content.trim() : "";
-                    if (!seenContents.has(cleanContent)) {
-                        seenContents.add(cleanContent);
-                        uniqueBatch.push(post);
-                    } else {
-                        console.log(`已自動過濾重複貼文：「${post.title}」`);
-                    }
-                });
-
-                currentIndex += nextBatchFiles.length;
-                renderBatch(uniqueBatch);
-            } catch (e) {
-                console.error("Batch Fetch Error:", e);
-                loadingNode.innerText = "部分文章內容載入失敗。";
-            } finally {
-                isFetching = false;
-                updateLoadingText();
+            if (!data) {
+                data = await fetch(file.download_url).then(r => r.json());
+                localStorage.setItem(cacheKey, JSON.stringify(data));
             }
-        }
+            
+            return `
+                <article class="post-card" id="card-${file.sha}">
+                    <div style="color:var(--accent); font-size:0.75rem; font-weight:700;">${data.category || 'LOG'}</div>
+                    <h2 style="margin:8px 0; font-size:1.5rem;">${data.title}</h2>
+                    <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:15px;">📅 ${new Date(data.date).toLocaleDateString()}</div>
+                    <div class="content" style="line-height:1.7;">${data.content}</div>
+                </article>
+            `;
+        }));
 
-        function renderBatch(posts) {
-            if(posts.length === 0) return;
-            posts.forEach((post, index) => {
-                const div = document.createElement('article');
-                div.className = 'post-card';
-                div.style.animationDelay = `${index * 50}ms`;
-                
-                div.innerHTML = `
-                    <small class="category-tag">${post.category || '一般'}</small>
-                    <h2>${post.title}</h2>
-                    <div class="date-display">
-                        <span>📅</span>
-                        <span>${new Date(post.date).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                    <div class="content">${post.content}</div>
-                `;
-                postsContainer.appendChild(div);
-            });
-        }
+        container.insertAdjacentHTML('beforeend', postHTMLs.join(''));
+        currentIndex += PAGE_SIZE;
+        isFetching = false;
+        updateTOC();
+    }
 
-        function recoverCurrentIndexFromDOM() {
-            const cards = document.querySelectorAll('.post-card h2');
-            currentIndex = cards.length > 0 ? cards.length : 0;
-        }
+    // --- 3. 搜尋優化：防抖與虛擬過濾 ---
+    let searchTimeout;
+    document.getElementById('search').oninput = (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const term = e.target.value.toLowerCase();
+            currentIndex = 0;
+            document.getElementById('posts-container').innerHTML = '';
+            
+            // 輕量化搜尋：只過濾檔名索引，不觸發大量 DOM 操作
+            filteredFiles = allFiles.filter(f => f.name.toLowerCase().includes(term));
+            renderNextBatch();
+        }, 250); // 防抖 250ms
+    };
 
-        function recoverSeenContentsFromDOM() {
-            seenContents.clear();
-            const contents = document.querySelectorAll('.post-card .content');
-            contents.forEach(node => {
-                const cleanContent = node.innerHTML ? node.innerHTML.trim() : "";
-                if(cleanContent) seenContents.add(cleanContent);
-            });
-        }
+    // --- 4. 目錄索引自動生成 ---
+    function updateTOC() {
+        const list = document.getElementById('toc-list');
+        const cards = document.querySelectorAll('.post-card h2');
+        list.innerHTML = [...cards].map(h2 => `
+            <a href="javascript:void(0)" class="toc-link" onclick="document.getElementById('${h2.parentElement.id}').scrollIntoView({behavior:'smooth', block:'center'})">
+                • ${h2.innerText.substring(0, 15)}...
+            </a>
+        `).join('');
+    }
 
-        function updateLoadingText() {
-            if (currentIndex >= fileList.length) {
-                loadingNode.innerText = "已讀完所有開發日誌 🎉";
-            } else {
-                loadingNode.innerText = "向下滾動載入更多...";
-            }
-        }
-
-        function handleSearch(e) {
-            const term = e.target.value.toLowerCase().trim();
-            const cards = document.querySelectorAll('.post-card');
-            let hasResults = false;
-
-            if (term === '') {
-                sessionStorage.removeItem('is_searching');
-                cards.forEach(card => card.style.display = 'block');
-                updateLoadingText();
-                loadingNode.style.display = 'block';
-                const msg = document.getElementById('no-results-msg');
-                if(msg) msg.remove();
-                return;
-            }
-
-            sessionStorage.setItem('is_searching', 'true');
-            loadingNode.style.display = 'none';
-
-            cards.forEach(card => {
-                const title = card.querySelector('h2').innerText.toLowerCase();
-                const content = card.querySelector('.content').innerHTML.toLowerCase();
-                const category = card.querySelector('.category-tag').innerText.toLowerCase();
-                
-                if (title.includes(term) || content.includes(term) || category.includes(term)) {
-                    card.style.display = 'block';
-                    hasResults = true;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-
-            const msg = document.getElementById('no-results-msg');
-            if (!hasResults) {
-                if(!msg) {
-                    const div = document.createElement('div');
-                    div.id = 'no-results-msg';
-                    div.innerHTML = `找不到與 「${term}」 相關的貼文。`;
-                    postsContainer.after(div);
-                } else {
-                    msg.innerHTML = `找不到與 「${term}」 相關的貼文。`;
-                }
-            } else {
-                if(msg) msg.remove();
-            }
-        }
-
-        init();
-    </script>
+    init();
+</script>
 </body>
 </html>
