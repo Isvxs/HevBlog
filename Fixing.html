@@ -6,13 +6,10 @@
     <title>系統狀態 | HevLog</title>
     <style>
         :root {
-            /* 核心黑白色系 */
             --bg-dark: #000000;
-            --card-bg: #000000;
             --text-main: #ffffff;
             --text-muted: #888888;
             --border-white: #ffffff;
-            --banner-color: #ffffff;
         }
 
         body {
@@ -45,6 +42,8 @@
             letter-spacing: 4px;
             text-transform: uppercase;
             z-index: 10;
+            /* 強制橫幅內所有內容（含 Emoji）變為純黑白 */
+            filter: grayscale(100%) contrast(2000%);
         }
 
         .banner-top { top: 0; }
@@ -72,11 +71,10 @@
 
         /* --- 中央卡片 --- */
         .status-card {
-            background-color: var(--card-bg);
+            background-color: var(--bg-dark);
             width: 90%;
             max-width: 500px;
             padding: 40px;
-            /* 輕微圓角設定 */
             border-radius: 12px;
             border: 1px solid var(--border-white);
             box-shadow: 0 10px 40px rgba(255,255,255,0.05);
@@ -87,8 +85,8 @@
         .icon { 
             font-size: 3.5rem; 
             margin-bottom: 20px; 
-            /* 讓 Emoji 變黑白 */
-            filter: grayscale(100%) brightness(1.5); 
+            /* 強制中央 Emoji 變為純黑白 */
+            filter: grayscale(100%) contrast(2000%);
         }
         
         h1 { 
@@ -101,7 +99,6 @@
         .message-box {
             line-height: 1.8;
             padding: 20px;
-            /* 訊息框圓角 */
             border-radius: 8px;
             text-align: left;
             margin-top: 20px;
@@ -114,18 +111,17 @@
             margin-top: 20px; 
             font-size: 0.75rem; 
             color: var(--text-muted);
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         .btn-home {
             display: inline-block;
             margin-top: 25px;
             padding: 12px 24px;
-            /* 按鈕：白底黑字 */
             background: var(--text-main);
             color: var(--bg-dark);
             text-decoration: none;
-            /* 按鈕圓角 */
             border-radius: 8px;
             font-weight: bold;
             display: none;
@@ -154,7 +150,7 @@
         </div>
 
         <a href="index.html" id="home-btn" class="btn-home">回到首頁</a>
-        <div class="footer">HevLog Status System</div>
+        <div class="footer">HEVLOG STATUS SYSTEM</div>
     </div>
 
     <div class="banner banner-bottom">
@@ -179,21 +175,20 @@
             const msgBox = document.getElementById('message-box');
             const homeBtn = document.getElementById('home-btn');
 
-            setBannerText("⚠️ DETECTING SYSTEM STATUS /// PLEASE WAIT ⚠️");
+            setBannerText("⚠ DETECTING SYSTEM STATUS /// PLEASE WAIT ⚠");
 
             try {
-                // 模擬獲取 JSON
                 const res = await fetch('status.json?t=' + Date.now());
                 if (!res.ok) throw new Error();
                 const data = await res.json();
 
                 if (data.isFixing) {
-                    icon.innerText = "🛠️";
+                    icon.innerText = "🛠";
                     title.innerText = "系統維護中";
                     msgBox.innerText = data.message || "正在進行系統優化，請稍後再試。";
-                    setBannerText("⚠️ SYSTEM MAINTENANCE IN PROGRESS /// PLEASE STAND BY ⚠️");
+                    setBannerText("⚠ SYSTEM MAINTENANCE IN PROGRESS /// PLEASE STAND BY ⚠");
                 } else {
-                    icon.innerText = "⚪"; 
+                    icon.innerText = "◻"; 
                     title.innerText = "伺服器運作正常";
                     msgBox.innerHTML = "目前系統運作一切正常，歡迎訪問。<br><small style='color:#888'>將在 3 秒後自動導回首頁...</small>";
                     homeBtn.style.display = "inline-block";
@@ -204,7 +199,6 @@
                     }, 3000);
                 }
             } catch (e) {
-                // 預設正常狀態
                 icon.innerText = "🌐";
                 title.innerText = "伺服器運作正常";
                 msgBox.innerText = "連線成功，未偵測到維護指令。";
