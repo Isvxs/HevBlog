@@ -200,30 +200,49 @@
             container.appendChild(art);
         }
 
-        // --- 4. 搜尋優化 (不卡頓邏輯) ---
-        let searchTimer;
-        searchInput.oninput = (e) => {
-            clearTimeout(searchTimer);
-            const term = e.target.value.toLowerCase().trim();
+// --- 4. 全域搜尋優化 (標題、日期、分類、內容) ---
+let searchTimer;
+searchInput.oninput = (e) => {
+    clearTimeout(searchTimer);
+    const term = e.target.value.toLowerCase().trim();
+    
+    searchTimer = setTimeout(async () => {
+        container.innerHTML = '';
+        displayedCount = 0;
+        
+        if (term === "") {
+            filteredFiles = [...allFiles];
+        } else {
+            loadingNode.innerText = "SEARCHING CACHED LOGS...";
             
-            // 使用 Debounce 延遲搜尋，避免每輸入一個字就處理 30k 數據
-            searchTimer = setTimeout(() => {
-                container.innerHTML = '';
-                displayedCount = 0;
+            // 這裡的邏輯：從 localStorage (快取) 中尋找匹配的內容
+            // 因為 30k 規模下不可能即時抓取所有遠端 JSON
+            filteredFiles = allFiles.filter(file => {
+                const cacheKey = `p_${file.sha}`;
+                const cachedData = localStorage.getItem(cacheKey);
                 
-                if (term === "") {
-                    filteredFiles = [...allFiles];
-                } else {
-                    // 輕量化搜尋：只過濾檔案名稱 (通常檔名含日期/關鍵字)
-                    // 若要過濾內容，30k 規模需在 Server 端或預索引，此處以檔名搜尋優化效能
-                    filteredFiles = allFiles.filter(f => f.name.toLowerCase().includes(term));
+                if (cachedData) {
+                    const post = JSON.parse(cachedData);
+                    return (
+                        post.title?.toLowerCase().includes(term) ||
+                        post.content?.toLowerCase().includes(term) ||
+                        post.category?.toLowerCase().includes(term) ||
+                        post.date?.toLowerCase().includes(term) ||
+                        file.name.toLowerCase().includes(term) // 保留檔名搜尋作為備援
+                    );
                 }
-                
-                renderNextBatch();
-                if(filteredFiles.length === 0) loadingNode.innerText = "NO POSTS FOUND.";
-            }, 300);
-        };
-
+                // 如果沒快取，退而求其次只比對檔名 (避免效能崩潰)
+                return file.name.toLowerCase().includes(term);
+            });
+        }
+        
+        renderNextBatch();
+        
+        if(filteredFiles.length === 0) {
+            loadingNode.innerText = "NO MATCHES IN CACHE. TRY SCROLLING DOWN FIRST.";
+        }
+    }, 400); // 稍微增加延遲，讓使用者輸入更順暢
+};
         // --- 5. 目錄導覽 ---
         function updateTOC() {
             const toc = document.getElementById('toc-list');
