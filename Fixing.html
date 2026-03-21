@@ -6,15 +6,13 @@
     <title>系統狀態 | HevLog</title>
     <style>
         :root {
-            --bg-dark: #0d1117;
-            --card-dark: #161b22;
-            --accent-blue: #63adf7;
-            --accent-green: #63adf7;
-            --text-main: #c9d1d9;
-            --text-muted: #8b949e;
-            
-            /* 預設橫幅顏色 (會由 JS 動態切換) */
-            --banner-color: var(--accent-blue); 
+            /* 核心黑白色系 */
+            --bg-dark: #000000;
+            --card-bg: #000000;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --border-white: #ffffff;
+            --banner-color: #ffffff;
         }
 
         body {
@@ -26,27 +24,26 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            overflow: hidden; /* 隱藏滾動條 */
+            overflow: hidden;
             position: relative;
         }
 
-        /* --- 滾動橫幅 (Marquee) 樣式 --- */
+        /* --- 滾動橫幅 --- */
         .banner {
             position: absolute;
             left: 0;
             width: 100vw;
             height: 40px;
-            background-color: var(--card-dark);
-            border-top: 2px solid var(--banner-color);
-            border-bottom: 2px solid var(--banner-color);
-            color: var(--banner-color);
+            background-color: var(--bg-dark);
+            border-top: 1px solid var(--border-white);
+            border-bottom: 1px solid var(--border-white);
+            color: var(--text-main);
             display: flex;
             align-items: center;
             font-size: 1.1rem;
             font-weight: 800;
             letter-spacing: 4px;
             text-transform: uppercase;
-            box-shadow: 0 0 15px rgba(0,0,0,0.8);
             z-index: 10;
         }
 
@@ -56,12 +53,10 @@
         .banner-track {
             display: flex;
             width: max-content;
-            /* 動畫：20秒勻速無限循環 */
             animation: scroll-left 20s linear infinite;
         }
 
         .banner-bottom .banner-track {
-            /* 下橫幅反向滾動 */
             animation-direction: reverse; 
         }
 
@@ -72,62 +67,82 @@
 
         @keyframes scroll-left {
             0% { transform: translateX(0); }
-            /* 移動到 -50% 達成無縫銜接 (前提是內容複製了兩份) */
             100% { transform: translateX(-50%); } 
         }
 
-        /* --- 中央卡片樣式 --- */
+        /* --- 中央卡片 --- */
         .status-card {
-            background-color: var(--card-dark);
+            background-color: var(--card-bg);
             width: 90%;
             max-width: 500px;
             padding: 40px;
+            /* 輕微圓角設定 */
             border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+            border: 1px solid var(--border-white);
+            box-shadow: 0 10px 40px rgba(255,255,255,0.05);
             text-align: center;
-            transition: border 0.3s ease;
             z-index: 5;
         }
 
-        .status-fixing { border-top: 5px solid var(--accent-blue); }
-        .status-normal { border-top: 5px solid var(--accent-green); }
-
-        .icon { font-size: 3.5rem; margin-bottom: 20px; }
+        .icon { 
+            font-size: 3.5rem; 
+            margin-bottom: 20px; 
+            /* 讓 Emoji 變黑白 */
+            filter: grayscale(100%) brightness(1.5); 
+        }
         
-        h1 { font-size: 1.6rem; margin-bottom: 15px; letter-spacing: 1px; font-family: system-ui, sans-serif; }
+        h1 { 
+            font-size: 1.6rem; 
+            margin-bottom: 15px; 
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
 
         .message-box {
             line-height: 1.8;
             padding: 20px;
+            /* 訊息框圓角 */
             border-radius: 8px;
             text-align: left;
             margin-top: 20px;
-            background: rgba(255,255,255,0.03);
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
             min-height: 60px;
-            font-family: system-ui, sans-serif;
         }
 
-        .footer { margin-top: 30px; font-size: 0.8rem; color: var(--text-muted); font-family: system-ui, sans-serif; }
+        .footer { 
+            margin-top: 20px; 
+            font-size: 0.75rem; 
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
 
         .btn-home {
             display: inline-block;
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: var(--accent-green);
-            color: white;
+            margin-top: 25px;
+            padding: 12px 24px;
+            /* 按鈕：白底黑字 */
+            background: var(--text-main);
+            color: var(--bg-dark);
             text-decoration: none;
-            border-radius: 6px;
+            /* 按鈕圓角 */
+            border-radius: 8px;
             font-weight: bold;
             display: none;
-            font-family: system-ui, sans-serif;
+            transition: all 0.2s ease;
+            border: 1px solid var(--text-main);
+        }
+
+        .btn-home:hover {
+            background: var(--bg-dark);
+            color: var(--text-main);
         }
     </style>
 </head>
 <body>
 
     <div class="banner banner-top">
-        <div class="banner-track" id="track-top">
-            </div>
+        <div class="banner-track" id="track-top"></div>
     </div>
 
     <div id="main-card" class="status-card">
@@ -143,24 +158,18 @@
     </div>
 
     <div class="banner banner-bottom">
-        <div class="banner-track" id="track-bottom">
-             </div>
+        <div class="banner-track" id="track-bottom"></div>
     </div>
 
     <script>
-        // 生成重複的橫幅內容以確保無縫滾動
-        function setBannerText(text, colorVar) {
-            const repeatCount = 8; // 重複次數，確保足夠寬
+        function setBannerText(text) {
+            const repeatCount = 10;
             let fullHTML = '';
             for (let i = 0; i < repeatCount; i++) {
                 fullHTML += `<span>${text}</span>`;
             }
-            
             document.getElementById('track-top').innerHTML = fullHTML;
             document.getElementById('track-bottom').innerHTML = fullHTML;
-            
-            // 動態修改 CSS 變數來變更橫幅顏色
-            document.documentElement.style.setProperty('--banner-color', colorVar);
         }
 
         async function checkStatus() {
@@ -170,50 +179,37 @@
             const msgBox = document.getElementById('message-box');
             const homeBtn = document.getElementById('home-btn');
 
-            // 預設先顯示檢測中的橫幅
-            setBannerText("⚠️ DETECTING SYSTEM STATUS /// PLEASE WAIT ⚠️", "var(--text-muted)");
+            setBannerText("⚠️ DETECTING SYSTEM STATUS /// PLEASE WAIT ⚠️");
 
             try {
+                // 模擬獲取 JSON
                 const res = await fetch('status.json?t=' + Date.now());
                 if (!res.ok) throw new Error();
-                
                 const data = await res.json();
 
                 if (data.isFixing) {
-                    // --- 維護中狀態 ---
-                    card.classList.add('status-fixing');
                     icon.innerText = "🛠️";
                     title.innerText = "系統維護中";
-                    title.style.color = "var(--accent-blue)";
                     msgBox.innerText = data.message || "正在進行系統優化，請稍後再試。";
-                    
-                    // 設定藍色警告橫幅
-                    setBannerText("⚠️ SYSTEM MAINTENANCE IN PROGRESS /// PLEASE STAND BY ⚠️", "var(--accent-blue)");
+                    setBannerText("⚠️ SYSTEM MAINTENANCE IN PROGRESS /// PLEASE STAND BY ⚠️");
                 } else {
-                    // --- 正常狀態 ---
-                    card.classList.add('status-normal');
-                    icon.innerText = "";
-                    title.innerText = "HevLog 伺服器維護正常！";
-                    title.style.color = "var(--accent-green)";
-                    msgBox.innerHTML = "目前系統運作一切正常，歡迎訪問。<br><small style='color:gray'>將在 3 秒後自動導回首頁...</small>";
+                    icon.innerText = "⚪"; 
+                    title.innerText = "伺服器運作正常";
+                    msgBox.innerHTML = "目前系統運作一切正常，歡迎訪問。<br><small style='color:#888'>將在 3 秒後自動導回首頁...</small>";
                     homeBtn.style.display = "inline-block";
-
-                    // 設定綠色安全橫幅
-                    setBannerText("ALL SYSTEMS NOMINAL /// SERVER ONLINE", "var(--accent-green)");
+                    setBannerText("ALL SYSTEMS NOMINAL /// SERVER ONLINE");
 
                     setTimeout(() => {
                         window.location.href = 'index.html';
                     }, 3000);
                 }
             } catch (e) {
-                // 如果找不到 status.json，預設顯示正常
-                card.classList.add('status-normal');
+                // 預設正常狀態
                 icon.innerText = "🌐";
-                title.innerText = "HevLog 伺服器維護正常！";
+                title.innerText = "伺服器運作正常";
                 msgBox.innerText = "連線成功，未偵測到維護指令。";
                 homeBtn.style.display = "inline-block";
-                
-                setBannerText("ALL SYSTEMS NOMINAL /// SERVER ONLINE", "var(--accent-green)");
+                setBannerText("ALL SYSTEMS NOMINAL /// SERVER ONLINE");
             }
         }
 
