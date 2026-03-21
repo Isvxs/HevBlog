@@ -121,31 +121,66 @@
         toggle.onclick = () => saveTheme(document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
 
         // --- 2. 初始化 ---
-        async function init() {
+       async function init() {
+            // 1. 維護模式偵測 (使用 Raw 連結，不佔用 API 次數)
             try {
-                const s = await fetch('status.json?t=' + Date.now()).then(r => r.json());
-                if (s.isFixing) { window.location.href = 'Fixing.html'; return; }
-            } catch(e) {}
+                const sUrl = `https://raw.githubusercontent.com/${CONFIG.USER}/${CONFIG.REPO}/${CONFIG.BRANCH}/status.json?t=${Date.now()}`;
+                const s = await fetch(sUrl).then(r => r.json());
+                if (s && s.isFixing === true) { window.location.replace('Fixing.html'); return; }
+            } catch(e) { console.warn("Status check failed, proceeding..."); }
 
-            loadingNode.innerText = "FETCHING REPO DATA...";
-            
+            sentinel.innerText = "CONNECTING TO HEVLOG DATABASE...";
+
             try {
-                const res = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/posts?t=${Date.now()}`);
-                const data = await res.json();
+                // 2. 獲取 Git Tree (萬級檔案的核心)
+                // 先嘗試從 API 獲取最新的 Commit SHA
+                const refUrl = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/git/ref/heads/${CONFIG.BRANCH}`;
+                const refRes = await fetch(refUrl);
                 
-                allFiles = data.filter(f => f.name.endsWith('.json')).reverse();
-                filteredFiles = [...allFiles]; 
-                
-                renderNextBatch();
-            } catch (e) {
-                loadingNode.innerText = "CONNECTION ERROR.";
-            }
-
-            window.onscroll = () => {
-                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 800) {
-                    renderNextBatch();
+                if (refRes.status === 403) {
+                    throw new Error("GITHUB_API_LIMIT");
                 }
-            };
+                
+                const ref = await refRes.json();
+                const treeUrl = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/git/trees/${ref.object.sha}?recursive=1`;
+                const treeRes = await fetch(treeUrl);
+                const treeData = await treeRes.json();
+
+                // 3. 過濾資料
+                db.all = treeData.tree
+                    .filter(item => item.path.startsWith('posts/') && item.path.endsWith('.json'))
+                    .map(item => ({
+                        id: item.sha,
+                        name: item.path.split('/').pop(),
+                        cdnUrl: `https://cdn.jsdelivr.net/gh/${CONFIG.USER}/${CONFIG.REPO}@${CONFIG.BRANCH}/${item.path}`
+                    }))
+                    .reverse();
+
+                // 儲存一份快取到本地，萬一 API 掛了還能讀
+                localStorage.setItem('hevlog_backup_tree', JSON.stringify(db.all));
+
+                db.filtered = [...db.all];
+                renderNextBatch();
+
+            } catch (err) {
+                console.error("Init Error:", err);
+                
+                // 4. 容錯機制：如果 API 掛了，嘗試讀取本地快取
+                const backup = localStorage.getItem('hevlog_backup_tree');
+                if (backup) {
+                    db.all = JSON.parse(backup);
+                    db.filtered = [...db.all];
+                    renderNextBatch();
+                    sentinel.innerText = "OFFLINE MODE: LOADED FROM CACHE.";
+                } else {
+                    // 根據錯誤類型顯示具體訊息
+                    if (err.message === "GITHUB_API_LIMIT") {
+                        sentinel.innerHTML = "API LIMIT EXCEEDED.<br>Please wait 30-60 mins or try again later.";
+                    } else {
+                        sentinel.innerText = "CONNECTION ERROR. (Check Repo Privacy/Name)";
+                    }
+                }
+            }
         }
 
         // --- 3. 渲染邏輯 ---
