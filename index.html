@@ -60,6 +60,22 @@
         .content img:hover { filter: grayscale(0); }
         .status-msg { text-align: center; padding: 40px; font-size: 0.8rem; color: var(--muted); }
         @media (max-width: 900px) { aside { display: none; } .layout { justify-content: center; } }
+
+        /* --- 新增：反應按鈕區塊樣式 --- */
+        .reactions {
+            display: flex; gap: 10px; margin-top: 25px;
+        }
+        .reaction-btn {
+            background: transparent; border: 1px solid var(--border); color: var(--muted);
+            padding: 4px 12px; border-radius: 20px; cursor: pointer; font-family: var(--font-main);
+            font-size: 0.85rem; display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+        }
+        .reaction-btn:hover { border-color: var(--muted); color: var(--text); }
+        .reaction-btn.active { border-color: var(--accent); color: var(--text); font-weight: bold; }
+        
+        /* 核心：將 Emoji 轉為純黑或純白 */
+        .emoji-icon { filter: brightness(0); }
+        [data-theme="dark"] .emoji-icon { filter: brightness(0) invert(1); }
     </style>
 </head>
 <body data-theme="light">
@@ -84,7 +100,7 @@
     </div>
 
     <script>
-        // --- 核心配置 (請確保與你的 Repo 一致) ---
+        // --- 核心配置 ---
         const CONFIG = {
             USER: 'Isvxs',
             REPO: 'HevBlog',
@@ -105,7 +121,6 @@
 
         // --- 2. 初始化 ---
         async function init() {
-            // A. 維護模式偵測
             try {
                 const sUrl = `https://raw.githubusercontent.com/${CONFIG.USER}/${CONFIG.REPO}/${CONFIG.BRANCH}/status.json?t=${Date.now()}`;
                 const s = await fetch(sUrl).then(r => r.json());
@@ -115,7 +130,6 @@
             loadingNode.innerText = "CONNECTING TO DATABASE...";
 
             try {
-                // B. 獲取 Git Tree (萬級檔案優化)
                 const refUrl = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/git/ref/heads/${CONFIG.BRANCH}`;
                 const refRes = await fetch(refUrl);
                 if (refRes.status === 403) throw new Error("API_LIMIT");
@@ -125,13 +139,11 @@
                 const treeRes = await fetch(treeUrl);
                 const treeData = await treeRes.json();
 
-                // C. 過濾並建立數據索引
                 db.all = treeData.tree
                     .filter(item => item.path.startsWith('posts/') && item.path.endsWith('.json'))
                     .map(item => ({
                         sha: item.sha,
                         name: item.path.split('/').pop(),
-                        // 使用 CDN 加速讀取
                         download_url: `https://cdn.jsdelivr.net/gh/${CONFIG.USER}/${CONFIG.REPO}@${CONFIG.BRANCH}/${item.path}`
                     }))
                     .reverse();
@@ -185,8 +197,47 @@
             updateTOC();
         }
 
+        // --- 新增：取得/初始化文章的反應數據 ---
+        function getReactions(sha) {
+            const data = localStorage.getItem(`react_${sha}`);
+            // 預設基礎數量可以加上亂數讓畫面不那麼空，或者預設為 0
+            return data ? JSON.parse(data) : { up: 0, down: 0, userChoice: null };
+        }
+
+        // --- 新增：處理點擊反應的邏輯 ---
+        window.toggleReaction = function(sha, type) {
+            const data = getReactions(sha);
+            const otherType = type === 'up' ? 'down' : 'up';
+
+            if (data.userChoice === type) {
+                // 取消選擇
+                data[type]--;
+                data.userChoice = null;
+            } else {
+                // 新增選擇，若原本選另一個則切換
+                if (data.userChoice === otherType) {
+                    data[otherType]--;
+                }
+                data[type]++;
+                data.userChoice = type;
+            }
+
+            localStorage.setItem(`react_${sha}`, JSON.stringify(data));
+            
+            // 更新 UI
+            const btnUp = document.getElementById(`btn-up-${sha}`);
+            const btnDown = document.getElementById(`btn-down-${sha}`);
+            
+            btnUp.className = `reaction-btn ${data.userChoice === 'up' ? 'active' : ''}`;
+            btnDown.className = `reaction-btn ${data.userChoice === 'down' ? 'active' : ''}`;
+            
+            btnUp.querySelector('.count').innerText = data.up;
+            btnDown.querySelector('.count').innerText = data.down;
+        };
+
         function createPostElement(post, sha) {
             const art = document.createElement('article');
+            const reactData = getReactions(sha); // 取得這篇文的反應狀態
             art.className = 'post-card';
             art.id = `post-${sha}`;
             art.innerHTML = `
@@ -196,6 +247,14 @@
                 </div>
                 <h2>${post.title}</h2>
                 <div class="content">${post.content}</div>
+                <div class="reactions">
+                    <button id="btn-up-${sha}" class="reaction-btn ${reactData.userChoice === 'up' ? 'active' : ''}" onclick="toggleReaction('${sha}', 'up')">
+                        <span class="emoji-icon">👍</span> <span class="count">${reactData.up}</span>
+                    </button>
+                    <button id="btn-down-${sha}" class="reaction-btn ${reactData.userChoice === 'down' ? 'active' : ''}" onclick="toggleReaction('${sha}', 'down')">
+                        <span class="emoji-icon">👎</span> <span class="count">${reactData.down}</span>
+                    </button>
+                </div>
             `;
             container.appendChild(art);
         }
@@ -220,7 +279,7 @@
             }, 400);
         };
 
-        // --- 5. 目錄導覽 (平滑滾動) ---
+        // --- 5. 目錄導覽 ---
         function updateTOC() {
             const toc = document.getElementById('toc-list');
             const posts = container.querySelectorAll('.post-card');
