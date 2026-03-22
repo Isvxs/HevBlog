@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/jpeg" href="Lua.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HevLog | System Protocol & Terms</title>
+    <style>
+        :root {
+            --bg: #ffffff; --text: #1a1a1a; --muted: #666666;
+            --accent: #000000; --border: #e1e1e1; --code-bg: #f9f9f9;
+            --font-main: "SF Mono", "Cascadia Code", "Fira Code", "JetBrains Mono", monospace;
+        }
+        [data-theme="dark"] {
+            --bg: #0a0a0a; --text: #d1d1d1; --muted: #777777;
+            --accent: #ffffff; --border: #222222; --code-bg: #121212;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; background-color: var(--bg); color: var(--text);
+            font-family: var(--font-main); line-height: 1.7; padding: 60px 20px;
+        }
+        .container { max-width: 850px; margin: 0 auto; }
+        
+        header { border-bottom: 3px solid var(--accent); padding-bottom: 30px; margin-bottom: 50px; }
+        h1 { margin: 0; font-size: 1.8rem; letter-spacing: -1.5px; text-transform: uppercase; font-weight: 900; }
+        .sub-header { font-size: 0.75rem; color: var(--muted); margin-top: 8px; display: flex; gap: 20px; }
+
+        section { margin-bottom: 50px; }
+        h2 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 25px; }
+        
+        .tos-block { font-size: 0.85rem; color: var(--text); }
+        .tos-block h3 { font-size: 0.95rem; margin-top: 25px; color: var(--accent); }
+        .tos-block ul { padding-left: 20px; }
+        .tos-block li { margin-bottom: 10px; }
+
+        .protocol-box { 
+            background: var(--code-bg); border-left: 4px solid #ff3e3e; 
+            padding: 25px; margin: 30px 0; font-family: var(--font-main);
+        }
+        .protocol-box h4 { margin: 0 0 15px 0; color: #ff3e3e; font-size: 0.9rem; text-transform: uppercase; }
+
+        .footer { 
+            margin-top: 100px; padding-top: 30px; border-top: 1px solid var(--border); 
+            font-size: 0.7rem; color: var(--muted); text-align: left; line-height: 2;
+        }
+        
+        .btn-group { margin-top: 20px; display: flex; gap: 10px; }
+        .btn { 
+            text-decoration: none; color: var(--text); border: 1px solid var(--border); 
+            padding: 5px 15px; font-size: 0.75rem; transition: 0.2s; 
+        }
+        .btn:hover { border-color: var(--accent); background: var(--accent); color: var(--bg); }
+    </style>
+</head>
+<body data-theme="light">
+
+<div class="container">
+    <header>
+        <h1>HEVLOG_LEGAL_PROTOCOL</h1>
+        <div class="sub-header">
+            <span>VERSION: 4.2.0</span>
+            <span>ENFORCEMENT: STRICT</span>
+            <span>LAST_UPDATED: 2026-03-22</span>
+        </div>
+        <div class="btn-group">
+            <a href="index.html" class="btn">BACK_TO_HOME</a>
+            <a href="javascript:void(0)" class="btn" id="theme-toggle">SWITCH_THEME</a>
+        </div>
+    </header>
+
+    <section class="tos-block">
+        <h2>01. General Terms / 總則</h2>
+        <p>本文件（下稱「本協議」）規範使用者訪問 HevLog（下稱「本站」）之行為。進入、瀏覽或使用本站內容即視為您已閱讀、理解並同意受本協議之約束。若您不同意其中任何內容，請立即停止訪問。</p>
+        
+        <h3>1.1 平台性質</h3>
+        <p>本站為個人技術開發日誌（Dev Log），僅作為開發者 Isvxs (Hevmys) 發布程式碼、研究心得與技術文檔之用。本站**不提供**任何非管理員權限之留言、互動或社交功能。</p>
+        
+        <h3>1.2 權限限制</h3>
+        <p>本站之內容發布、修改與刪除權限僅歸屬於網站管理員。任何試圖透過 SQL 注入、腳本植入、API 偽造或其他技術手段干預本站內容之行為，均被視為對本協議的嚴重違法與安全威脅。</p>
+    </section>
+
+    <section class="tos-block">
+        <h2>02. Use of Content / 內容使用規範</h2>
+        <ul>
+            <li><strong>智慧財產權：</strong> 本站所有發布之程式碼（包含 Lua, Python, JavaScript, HTML/CSS）除非另有標註，否則版權均屬 Isvxs 所有。</li>
+            <li><strong>個人用途：</strong> 使用者僅限於個人研究或學習目的下載及參考本站代碼。</li>
+            <li><strong>禁止轉載：</strong> 嚴禁在未獲得管理員書面授權的情況下，將本站內容用於任何商業目的，或將其打包為付費產品進行轉售。</li>
+        </ul>
+    </section>
+
+    <section class="protocol-box">
+        <h4>03. Violation Enforce / 違規處理程序</h4>
+        <p style="font-size: 0.85rem;">本站採取零容忍政策，凡偵測到以下行為，將不經警告執行處分：</p>
+        <ul style="font-size: 0.8rem; line-height: 2;">
+            <li><strong>Unauthorized Access：</strong> 試圖破解 API 接口或管理員登入頁面者。</li>
+            <li><strong>Traffic Flooding：</strong> 惡意執行高頻率重新整理、DDoS 或使用爬蟲消耗 GitHub API 配額者。</li>
+            <li><strong>Reverse Engineering：</strong> 試圖破解或篡改本站核心邏輯（如 GitHub Token 存取機制）者。</li>
+        </ul>
+        <p style="font-size: 0.8rem; color: #ff3e3e; font-weight: bold;">處分結果：永久黑名單 (IP Block)、向 ISP 服務商檢舉惡意活動、封鎖其 GitHub 相關連線。</p>
+    </section>
+
+    <section class="tos-block">
+        <h2>04. Disclaimers / 免責聲明</h2>
+        <p>本站所載之所有資訊及代碼僅供參考。開發者已盡力確保資訊之準確性，但不對以下事項做出擔保：</p>
+        <ul>
+            <li><strong>代碼安全性：</strong> 使用本站腳本（尤其涉及遊戲引擎或自動化工具）可能導致第三方帳號（如 Roblox, Minecraft 等）被封禁、暫停或限制，此類風險由使用者完全承擔。</li>
+            <li><strong>硬體與數據損害：</strong> 因執行本站代碼而導致的設備損壞、數據丟失或系統錯誤，開發者不承擔任何賠償責任。</li>
+            <li><strong>第三方連結：</strong> 本站導向之任何外部網站，其內容與安全性與本站無涉。</li>
+        </ul>
+    </section>
+
+    <section class="tos-block">
+        <h2>05. Privacy / 隱私聲明</h2>
+        <p>本站本身不收集任何使用者個人資訊。惟本站託管於 GitHub Pages 且使用 Google Fonts，相關之訪問數據（如 IP 地址、瀏覽器類型）可能由該服務提供商依其隱私政策進行收集。</p>
+    </section>
+
+    <div class="footer">
+        © 2026 Hevmys / Isvxs. All Rights Reserved.<br>
+        Distributed under personal research license. No unauthorized replication allowed.
+    </div>
+</div>
+
+<script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const applyTheme = (t) => {
+        document.body.setAttribute('data-theme', t);
+        localStorage.setItem('hevlog_legal_theme', t);
+    };
+
+    // 初始化主題
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    applyTheme(savedTheme);
+
+    themeToggle.onclick = () => {
+        const current = document.body.getAttribute('data-theme');
+        applyTheme(current === 'light' ? 'dark' : 'light');
+    };
+</script>
+
+</body>
+</html>
