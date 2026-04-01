@@ -3,240 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <link rel="icon" type="image/jpeg" href="Lua.png">
-    <link rel="apple-touch-icon" href="Lua.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HevLog | Dev Log</title>
+    <title>H̶e̶v̶L̶o̶g̶ | SYSTΞM_FAILURΞ</title>
     <style>
         :root {
-            --bg: #ffffff; --card: #ffffff; --text: #1a1a1a; --muted: #666666;
-            --accent: #000000; --border: #e1e1e1; --header-bg: rgba(255,255,255,0.8);
-            --font-main: "SF Mono", "Cascadia Code", "Fira Code", "Courier New", monospace;
+            /* 鬼畜配色：極高對比、閃爍 */
+            --bg: #000; --text: #0f0; --border: #f0f;
+            --font-prank: "Wingdings", "Comic Sans MS", cursive;
         }
-        [data-theme="dark"] {
-            --bg: #0a0a0a; --card: #141414; --text: #e0e0e0; --muted: #888888;
-            --accent: #ffffff; --border: #262626; --header-bg: rgba(10,10,10,0.8);
+
+        [data-theme="dark"] { --bg: #f0f; --text: #000; --border: #000; }
+
+        * { box-sizing: border-box; cursor: crosshair !important; }
+
+        body { 
+            margin: 0; background: var(--bg); color: var(--text); 
+            font-family: var(--font-prank);
+            overflow-x: hidden;
+            /* 效果 1: 全螢幕濾鏡旋轉，讓人頭暈 */
+            animation: hueRotate 5s infinite linear;
         }
-        * { box-sizing: border-box; scroll-behavior: smooth; }
-        body {
-            margin: 0; background-color: var(--bg); color: var(--text);
-            font-family: var(--font-main); line-height: 1.5;
-            transition: background 0.2s ease;
-        }
+        @keyframes hueRotate { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+
+        /* 效果 2: 標題是隨機代碼 */
         header {
             position: fixed; top: 0; width: 100%; height: 60px;
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 30px; border-bottom: 1px solid var(--border);
-            background: var(--header-bg); backdrop-filter: blur(10px); z-index: 1000;
+            padding: 0 30px; border-bottom: 2px solid var(--border);
+            background: var(--bg); z-index: 1000;
         }
-        header h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: -1px; margin: 0; cursor: pointer; }
-        .nav-right { display: flex; align-items: center; gap: 15px; }
+        header h1 { font-size: 1rem; text-transform: uppercase; animation: glitch 0.2s infinite; }
+        @keyframes glitch { 
+            0% { transform: translate(1px, 1px); } 
+            50% { transform: translate(-2px, -2px) skew(10deg); color: #f00; }
+            100% { transform: translate(1px, 1px); } 
+        }
+
+        /* 效果 3: 搜尋框按下去會放大 10 倍 */
+        .search-wrapper { position: relative; }
         .search-bar {
-            background: var(--bg); border: 1px solid var(--border);
-            color: var(--text); padding: 6px 12px; font-family: var(--font-main);
-            font-size: 0.85rem; width: 220px; outline: none; transition: width 0.3s;
+            background: #fff; color: #000; font-family: sans-serif;
+            transition: 0.2s;
         }
-        .search-bar:focus { border-color: var(--accent); width: 280px; }
-        #theme-toggle {
-            background: none; border: 1px solid var(--border); color: var(--text);
-            padding: 4px 10px; cursor: pointer; font-family: var(--font-main); font-size: 0.75rem;
+        .search-bar:focus { 
+            transform: scale(10) translate(-50px, 100px); 
+            position: absolute; z-index: 9999; 
         }
+
+        /* 效果 4: 按鈕點擊後會「爆炸」並克隆自己 */
+        #theme-btn { animation: pulsate 0.5s infinite; }
+        @keyframes pulsate { 0% { opacity: 1; } 50% { opacity: 0.1; transform: scale(1.1); } }
+
         .layout { display: flex; max-width: 1200px; margin: 80px auto 0; padding: 0 20px; gap: 40px; }
-        aside { width: 220px; position: sticky; top: 80px; height: calc(100vh - 100px); overflow-y: auto; }
-        aside h4 { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); margin-bottom: 15px; }
+
+        /* 效果 5: 目錄會隨機漂浮 */
+        aside { width: 220px; position: relative; }
         .toc-item { 
-            display: block; font-size: 0.8rem; color: var(--muted); text-decoration: none;
-            padding: 6px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-            transition: color 0.2s; border-left: 2px solid transparent; padding-left: 10px;
+            display: block; font-size: 0.8rem; color: #00f; 
+            text-decoration: underline; margin-bottom: 10px;
+            animation: float 3s infinite ease-in-out;
         }
-        .toc-item:hover { color: var(--accent); border-left-color: var(--accent); }
-        main { flex: 1; max-width: 700px; }
-        .post-card { padding-bottom: 50px; margin-bottom: 50px; border-bottom: 1px solid var(--border); animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .meta { font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; display: flex; gap: 15px; }
-        .category { color: var(--accent); font-weight: bold; }
-        .post-card h2 { font-size: 1.5rem; margin: 0 0 15px 0; letter-spacing: -0.5px; scroll-margin-top: 80px; }
-        .content { font-size: 0.95rem; color: var(--text); }
-        .content img { max-width: 100%; border-radius: 2px; filter: grayscale(0.2); transition: 0.3s; }
-        .content img:hover { filter: grayscale(0); }
-        .status-msg { text-align: center; padding: 40px; font-size: 0.8rem; color: var(--muted); }
-        @media (max-width: 900px) { aside { display: none; } .layout { justify-content: center; } }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(10px, -20px) rotate(5deg); }
+        }
+
+        main { flex: 1; max-width: 700px; position: relative; }
+
+        /* 效果 6: 文章內容垂直倒立，滑鼠移上去才正過來 */
+        .post-card {
+            margin-bottom: 50px; border: 3px solid var(--border); padding: 20px;
+            background: var(--card);
+            transform: rotateX(180deg);
+            transition: transform 0.3s;
+        }
+        .post-card:hover { transform: rotateX(0deg) scale(1.1); z-index: 999; }
+        .post-card h2 { font-family: "Fira Code", monospace; font-size: 1rem; color: #f00; }
+        .content { font-family: sans-serif; font-size: 0.9rem; color: #fff; }
+
+        /* 效果 7: 假死機藍屏 */
+        #bsod {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0000aa; color: #fff; font-family: sans-serif;
+            display: none; z-index: 99999; padding: 50px;
+            font-size: 1.5rem;
+        }
+
+        .system-status { font-size: 8rem; color: #ff0; animation: blink 0.1s infinite; text-align: center; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } }
     </style>
 </head>
-<body data-theme="light">
+<body data-theme="dark">
+
+    <div id="bsod">
+        <h1>:(</h1>
+        <p>A problem has been detected and HevLog has been shut down to prevent damage to your brain.</p>
+        <p>REASON: USER_INTELLIGENCE_NOT_FOUND</p>
+        <p>Please restart your computer and think about what you've done.</p>
+        <p>Progress: <span id="bsod-pc">0</span>%</p>
+    </div>
 
     <header>
-        <h1 onclick="location.reload()">HevLog</h1>
+        <h1 id="logo">T̸H̸E̸_L̸O̸G̸</h1>
         <div class="nav-right">
-            <input type="search" id="search" class="search-bar" placeholder="搜尋標題、內容、日期...">
-            <button id="theme-toggle">MODE</button>
+            <div class="search-wrapper">
+                <input type="text" class="search-bar" placeholder="快打字，我要爆炸了...">
+            </div>
+            <button id="theme-btn">不要點我</button>
         </div>
     </header>
 
     <div class="layout">
         <aside>
-            <h4>Index / 目錄導覽</h4>
-            <div id="toc-list"></div>
+            <h4>目錄 (已經瘋了)</h4>
+            <div id="toc-list">
+                <a href="#" class="toc-item">NULL_POINTER</a>
+                <a href="#" class="toc-item">SEG_FAULT</a>
+            </div>
         </aside>
-        <main>
+
+        <main id="main-content">
             <div id="posts-container"></div>
-            <div id="loading-node" class="status-msg">INITIALIZING...</div>
+            <div id="loading-node" class="system-status">死機中...</div>
         </main>
     </div>
 
     <script>
-        // --- 核心配置 (請確保與你的 Repo 一致) ---
-        const CONFIG = {
-            USER: 'Isvxs',
-            REPO: 'HevBlog',
-            BRANCH: 'main',
-            PAGE_SIZE: 9
+        const CONFIG = { USER: 'Isvxs', REPO: 'HevBlog', BRANCH: 'main' };
+        
+        // 效果 8: 滑鼠跟隨矩陣代碼
+        document.addEventListener('mousemove', (e) => {
+            const code = document.createElement('div');
+            code.innerText = Math.random() > 0.5 ? '1' : '0';
+            code.style.position = 'absolute';
+            code.style.left = e.pageX + 'px';
+            code.style.top = e.pageY + 'px';
+            code.style.color = '#0f0';
+            code.style.fontSize = '10px';
+            code.style.zIndex = '9999';
+            code.style.pointerEvents = 'none';
+            document.body.appendChild(code);
+            setTimeout(() => code.remove(), 500);
+        });
+
+        // 效果 9: 隨機播放尖叫聲 (預設靜音，點擊後觸發)
+        document.body.onclick = () => {
+            if(!window.audioTrig) {
+                const audio = new Audio('https://www.soundjay.com/human/screams/scream-01.mp3');
+                audio.volume = 0.1;
+                audio.play();
+                window.audioTrig = true;
+            }
         };
 
-        let db = { all: [], filtered: [], ptr: 0, isBusy: false };
-        const container = document.getElementById('posts-container');
-        const loadingNode = document.getElementById('loading-node');
-        const searchInput = document.getElementById('search');
-
-        // --- 1. 深色模式 ---
-        const toggle = document.getElementById('theme-toggle');
-        const saveTheme = (t) => { document.body.setAttribute('data-theme', t); localStorage.setItem('theme', t); };
-        saveTheme(localStorage.getItem('theme') || 'light');
-        toggle.onclick = () => saveTheme(document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
-
-        // --- 2. 初始化 ---
         async function init() {
-            // A. 維護模式偵測
-            try {
-                const sUrl = `https://raw.githubusercontent.com/${CONFIG.USER}/${CONFIG.REPO}/${CONFIG.BRANCH}/status.json?t=${Date.now()}`;
-                const s = await fetch(sUrl).then(r => r.json());
-                if (s && s.isFixing === true) { window.location.replace('Fixing.html'); return; }
-            } catch(e) { console.warn("Status check failed."); }
-
-            loadingNode.innerText = "CONNECTING TO DATABASE...";
-
-            try {
-                // B. 獲取 Git Tree (萬級檔案優化)
-                const refUrl = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/git/ref/heads/${CONFIG.BRANCH}`;
-                const refRes = await fetch(refUrl);
-                if (refRes.status === 403) throw new Error("API_LIMIT");
-                const refData = await refRes.json();
-                
-                const treeUrl = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/git/trees/${refData.object.sha}?recursive=1`;
-                const treeRes = await fetch(treeUrl);
-                const treeData = await treeRes.json();
-
-                // C. 過濾並建立數據索引
-                db.all = treeData.tree
-                    .filter(item => item.path.startsWith('posts/') && item.path.endsWith('.json'))
-                    .map(item => ({
-                        sha: item.sha,
-                        name: item.path.split('/').pop(),
-                        // 使用 CDN 加速讀取
-                        download_url: `https://cdn.jsdelivr.net/gh/${CONFIG.USER}/${CONFIG.REPO}@${CONFIG.BRANCH}/${item.path}`
-                    }))
-                    .reverse();
-
-                localStorage.setItem('hevlog_backup_tree', JSON.stringify(db.all));
-                db.filtered = [...db.all];
-                renderNextBatch();
-
-            } catch (err) {
-                console.error("Init Error:", err);
-                const backup = localStorage.getItem('hevlog_backup_tree');
-                if (backup) {
-                    db.all = JSON.parse(backup);
-                    db.filtered = [...db.all];
-                    renderNextBatch();
-                    loadingNode.innerText = "OFFLINE MODE: LOADED FROM CACHE.";
-                } else {
-                    loadingNode.innerText = err.message === "API_LIMIT" ? "API LIMIT EXCEEDED. TRY LATER." : "CONNECTION ERROR.";
-                }
-            }
-
-            window.onscroll = () => {
-                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 800) renderNextBatch();
-            };
+            setTimeout(loadPosts, 2000); // 故意延遲
         }
 
-        // --- 3. 渲染邏輯 ---
-        async function renderNextBatch() {
-            if (db.isBusy || db.ptr >= db.filtered.length) return;
-            db.isBusy = true;
-            loadingNode.innerText = "LOADING BATCH...";
+        async function loadPosts() {
+            try {
+                const treeUrl = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/git/trees/${CONFIG.BRANCH}?recursive=1`;
+                const res = await fetch(treeUrl).then(r => r.json());
+                const files = res.tree.filter(f => f.path.startsWith('posts/')).reverse();
 
-            const batch = db.filtered.slice(db.ptr, db.ptr + CONFIG.PAGE_SIZE);
-            
-            for (const file of batch) {
-                try {
-                    const cacheKey = `p_${file.sha}`;
-                    let post = JSON.parse(localStorage.getItem(cacheKey));
+                for (let file of files.slice(0, 3)) { // 只載入三篇，因為畫面太亂了
+                    const data = await fetch(`https://cdn.jsdelivr.net/gh/${CONFIG.USER}/${CONFIG.REPO}@${CONFIG.BRANCH}/${file.path}`).then(r => r.json());
+                    const art = document.createElement('article');
+                    art.className = 'post-card';
+                    // 效果 10: 內容加密 (滑鼠移上去解密)
+                    const originalContent = data.content;
+                    const encryptedContent = originalContent.replace(/./g, () => String.fromCharCode(Math.random() * 100 + 1000));
                     
-                    if (!post) {
-                        post = await fetch(file.download_url).then(r => r.json());
-                        localStorage.setItem(cacheKey, JSON.stringify(post));
-                    }
-                    createPostElement(post, file.sha);
-                } catch (e) { console.error("Skip post"); }
+                    art.innerHTML = `<h2>${data.title}</h2><div class="content" id="c-${file.sha}">${encryptedContent}</div>`;
+                    
+                    art.onmouseover = () => document.getElementById(`c-${file.sha}`).innerText = originalContent;
+                    art.onmouseout = () => document.getElementById(`c-${file.sha}`).innerText = encryptedContent;
+                    
+                    document.getElementById('posts-container').appendChild(art);
+                }
+                document.getElementById('loading-node').style.display = 'none';
+            } catch(e) {
+                triggerBSOD();
             }
-
-            db.ptr += batch.length;
-            db.isBusy = false;
-            loadingNode.innerText = db.ptr >= db.filtered.length ? "END OF LOGS." : "SCROLL FOR MORE.";
-            updateTOC();
-        }
-        function createPostElement(post, sha) {
-            const art = document.createElement('article');
-            art.className = 'post-card';
-            art.id = `post-${sha}`;
-            art.innerHTML = `
-                <div class="meta">
-                    <span class="category">${post.category || 'GENERAL'}</span>
-                    <span>${new Date(post.date).toLocaleDateString()}</span>
-                </div>
-                <h2>${post.title}</h2>
-                <div class="content">${post.content}</div>
-            `;
-            container.appendChild(art);
         }
 
-        // --- 4. 深度搜尋 ---
-        let searchTimer;
-        searchInput.oninput = (e) => {
-            clearTimeout(searchTimer);
-            const term = e.target.value.toLowerCase().trim();
-            searchTimer = setTimeout(() => {
-                container.innerHTML = '';
-                db.ptr = 0;
-                db.filtered = db.all.filter(file => {
-                    const cached = localStorage.getItem(`p_${file.sha}`);
-                    if (cached) {
-                        const post = JSON.parse(cached);
-                        return (post.title?.toLowerCase().includes(term) || post.content?.toLowerCase().includes(term));
-                    }
-                    return file.name.toLowerCase().includes(term);
-                });
-                renderNextBatch();
-            }, 400);
+        // 效果 11: 點擊按鈕觸發藍屏
+        document.getElementById('theme-btn').onclick = () => {
+            const btn = document.getElementById('theme-btn');
+            for(let i=0; i<10; i++) {
+                const clone = btn.cloneNode(true);
+                clone.style.position = 'absolute';
+                clone.style.left = Math.random() * window.innerWidth + 'px';
+                clone.style.top = Math.random() * window.innerHeight + 'px';
+                document.body.appendChild(clone);
+            }
+            setTimeout(triggerBSOD, 1000);
         };
-        // --- 5. 目錄導覽 (平滑滾動) ---
-        function updateTOC() {
-            const toc = document.getElementById('toc-list');
-            const posts = container.querySelectorAll('.post-card');
-            toc.innerHTML = '';
-            posts.forEach((post) => {
-                const title = post.querySelector('h2').innerText;
-                const a = document.createElement('a');
-                a.className = 'toc-item';
-                a.href = "javascript:void(0);";
-                a.innerText = title;
-                a.onclick = () => {
-                    const rect = post.getBoundingClientRect();
-                    const offset = window.pageYOffset + rect.top - 80;
-                    window.scrollTo({ top: offset, behavior: 'smooth' });
-                };
-                toc.appendChild(a);
-            });
+
+        function triggerBSOD() {
+            const bsod = document.getElementById('bsod');
+            const pc = document.getElementById('bsod-pc');
+            bsod.style.display = 'block';
+            let count = 0;
+            const timer = setInterval(() => {
+                count++;
+                pc.innerText = count;
+                if(count >= 100) {
+                    clearInterval(timer);
+                    location.reload(); // 100% 後自動重新整理
+                }
+            }, 50);
         }
+
         init();
     </script>
 </body>
