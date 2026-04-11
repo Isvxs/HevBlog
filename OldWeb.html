@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>~ HevLog Dev 日誌 ~</title>
+<style>
+  /* --- 復古 CSS 底色與字體 --- */
+  body {
+    background-color: #C0C0C0; /* 經典 Windows 灰 */
+    color: #000000;
+    font-family: "Times New Roman", "新細明體", serif;
+    margin: 10px;
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36z8gAFWNgYGBkgAsgM5AsBqnA5wMAWw8RAnofXfAAAAAASUVORK5CYII='); /* 微小的網點背景增加質感 */
+  }
+
+  /* 傳統連結色彩 */
+  a:link, .toc-item:link { color: #0000FF; text-decoration: underline; }
+  a:visited, .toc-item:visited { color: #800080; }
+  a:active { color: #FF0000; }
+
+  /* 復古標題 */
+  h1 { 
+    font-family: "Courier New", monospace; 
+    text-align: center; 
+    background-color: #000080; /* 視窗藍 */
+    color: #FFFFFF;
+    padding: 5px;
+    border: 3px outset #FFFFFF;
+    text-shadow: 2px 2px #000;
+  }
+  
+  h2 {
+    font-size: 1.2rem;
+    background-color: #808080;
+    color: #fff;
+    padding: 2px 5px;
+    border-left: 5px solid #000080;
+  }
+
+  /* --- 模擬 TABLE 佈局 (用 CSS 模擬以利精簡) --- */
+  .main-table {
+    display: table;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 5px;
+  }
+  
+  .table-row { display: table-row; }
+  
+  /* 左側內容區 */
+  main {
+    display: table-cell;
+    width: 75%;
+    vertical-align: top;
+    border: 2px solid #808080;
+    background-color: #fff;
+    padding: 10px;
+    box-shadow: inset 2px 2px 0 #000;
+  }
+
+  /* 右側側欄 */
+  aside {
+    display: table-cell;
+    width: 25%;
+    vertical-align: top;
+    background-color: #D4D0C8;
+    border: 2px outset #fff;
+    padding: 10px;
+  }
+
+  /* --- 復古元件 --- */
+  .search-box {
+    text-align: center;
+    border: 2px ridge #fff;
+    padding: 5px;
+    margin-bottom: 10px;
+    background: #fff;
+  }
+  
+  input[type="search"] {
+    border: 2px inset #fff;
+    background: #fff;
+    font-family: monospace;
+  }
+
+  /* 3D 浮雕按鈕 */
+  button {
+    background-color: #C0C0C0;
+    border: 2px outset #fff;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button:active { border: 2px inset #fff; }
+
+  /* 文章樣式 */
+  .post-card {
+    margin-bottom: 30px;
+    border-bottom: 2px dashed #808080;
+    padding-bottom: 10px;
+  }
+
+  .meta {
+    font-size: 0.8rem;
+    color: #008000; /* 綠色，像系統日誌 */
+    font-family: monospace;
+  }
+
+  .content img {
+    border: 3px solid #000;
+    padding: 2px;
+    background: #fff;
+  }
+
+  /* 目錄項目 */
+  .toc-item {
+    display: block;
+    cursor: pointer;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    text-decoration: underline;
+  }
+  .toc-item:before { content: "[*] "; }
+
+  .stat-msg {
+    border: 1px solid #000;
+    background: #FFFFE1; /* 螢光黃提示 */
+    padding: 3px;
+    margin-top: 10px;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  /* 手機排版：降級為單欄 */
+  @media(max-width:768px){
+    .main-table, .table-row, main, aside { display: block; width: auto; border: none; }
+    aside { border-top: 2px ridge #fff; margin-top: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<marquee bgcolor="#FF0000" textcolor="#FFFFFF" scrollamount="3">*** 歡迎來到 Isvxs 的 Dev 日誌 ~ 資料讀取中... ***</marquee>
+
+<header>
+  <h1 onclick="location.reload()" title="按一下刷新">WELCOME TO HEVLOG</h1>
+</header>
+
+<div class="search-box">
+  <form onsubmit="return false;">
+    <font size="2"><b>[關鍵字搜尋]</b></font>
+    <input type="search" id="S" size="20">
+    <button id="BtnS">Go!</button>
+  </form>
+</div>
+
+<div class="main-table">
+  <div class="table-row">
+    <main id="C"></main>
+    
+    <aside>
+      <center>
+        <font size="3"><b>[索引目錄]</b></font>
+        <hr size="2" width="80%" color="#808080">
+      </center>
+      <div id="T"></div>
+      
+      <div id="L" class="stat-msg">Ready.</div>
+      
+      <br><center><img src="data:image/gif;base64,R0lGODlhGgAaAOMMAOfn5+jo6Onp6erq6uvr6+zs7O7u7u/v7/Dw8PHx8fLy8vPz8/T09P///wAAAAAAACH5BAEAAAwALAAAAAAaABoAAARTkMhJq7046827/2AojmRpnmiqrqyrbu3ruu84z/RtnwUBCwQCgwXgsFg0FhcK5ZLJXDKbzqezCSUul4vFEUFUJJZIZpPZdB6RzOWyyVQul9vveE4EADs=" alt="Counter"> 
+      <br><font size="1">Visitor No. 000042</font></center>
+    </aside>
+  </div>
+</div>
+
+<script>
+// --- JS 邏輯不變，僅微調提示字與 DOM 選取 ---
+const C={U:'Isvxs',R:'HevBlog',B:'main',S:5},db={a:[],f:[],p:0,b:!1};
+const $=(id)=>document.getElementById(id),cnt=$('C'),lod=$('L'),toc=$('T');
+
+async function init(){
+  try{
+    lod.innerText="...連接主機中...";
+    const r=await(await fetch(`https://api.github.com/repos/${C.U}/${C.R}/git/trees/${C.B}?recursive=1`)).json();
+    db.a=r.tree.filter(i=>i.path.startsWith('posts/')&&i.path.endsWith('.json'))
+      .map(i=>({s:i.sha,n:i.path.split('/').pop(),u:`https://cdn.jsdelivr.net/gh/${C.U}/${C.R}@${C.B}/${i.path}`})).reverse();
+    db.f=[...db.a];
+    load();
+  }catch(e){lod.innerText="<ERROR: CANNOT CONNECT>"; lod.style.background="#ff0000"; lod.style.color="#fff";}
+  window.onscroll=()=>{if(innerHeight+scrollY>=document.body.offsetHeight-400)load()};
+}
+
+async function load(){
+  if(db.b||db.p>=db.f.length)return;
+  db.b=!0;lod.innerText="...讀取封包中...";
+  for(const f of db.f.slice(db.p,db.p+C.S)){
+    try{
+      let p=JSON.parse(localStorage.getItem(f.s));
+      if(!p){p=await(await fetch(f.u)).json();localStorage.setItem(f.s,JSON.stringify(p))}
+      const a=document.createElement('article');
+      a.className='post-card';
+      // 復古 meta 格式
+      a.innerHTML=`<div class="meta">&gt; TYPE: [${p.category||'GEN'}]<br>&gt; DATE: ${p.date}</div>
+                   <h2>${p.title}</h2><div class="content">${p.content}</div>`;
+      cnt.appendChild(a);
+      // TOC 項目
+      const t=document.createElement('a');
+      t.className='toc-item';t.innerText=p.title;t.href="#";
+      t.onclick=(e)=>{e.preventDefault(); a.scrollIntoView({behavior:'smooth'});};
+      toc.appendChild(t);
+    }catch(e){}
+  }
+  db.p+=C.S;db.b=!1;
+  lod.innerText=db.p>=db.f.length?"--- LOG END ---":"[向下滾動讀取更多]";
+}
+
+// 搜尋功能
+const doSearch=()=>{
+  cnt.innerHTML=toc.innerHTML='';db.p=0;
+  const v=$('S').value.toLowerCase().trim();
+  db.f=db.a.filter(f=>{
+    const c=localStorage.getItem(f.s);
+    if(c){
+        const p=JSON.parse(c);
+        return p.title.toLowerCase().includes(v) || (p.category && p.category.toLowerCase().includes(v));
+    }
+    return f.n.toLowerCase().includes(v);
+  });
+  load();
+};
+
+$('BtnS').onclick=doSearch;
+$('S').onkeypress=(e)=>{if(e.which===13)doSearch();}; // Enter 鍵搜尋
+
+init();
+</script>
+</body>
+</html>
